@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Admin Resources | Raisoni Nexus</title><link rel="stylesheet" href="../assets/css/style.css" /><link rel="stylesheet" href="../assets/css/admin.css" /><link rel="stylesheet" href="../assets/css/themes.css" /><link rel="stylesheet" href="../assets/css/responsive.css" /></head>
+  <body class="admin-body">
+    <div class="admin-shell">
+      <aside class="admin-sidebar open"><div class="admin-brand"><span class="brand-mark">RN</span><strong>Raisoni Nexus</strong></div><nav class="admin-nav"><a href="dashboard.html">Dashboard</a><a class="active" href="resources.html">Resources</a><a href="upload.html">Upload Resource</a><a href="branches.html">Branches</a><a href="semesters.html">Semesters</a><a href="subjects.html">Subjects</a><a href="users.html">Users</a><a href="notices.html">Notices</a><a href="analytics.html">Analytics</a><a href="settings.html">Settings</a><a href="login.html">Logout</a></nav></aside>
+      <main class="admin-main"><div class="admin-topbar"><div><button class="primary-btn admin-sidebar-toggle">☰ Menu</button></div><div><strong>Resources</strong></div><div><a class="primary-btn" href="upload.html">+ New Resource</a></div></div><div class="admin-panel"><div class="table-wrap"><table><thead><tr><th>Title</th><th>Branch</th><th>Type</th><th>Status</th><th>Downloads</th><th>Actions</th></tr></thead><tbody id="adminResourcesBody"></tbody></table></div></div></main>
+    </div>
+    <script src="../assets/js/theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-config.js"></script>
+  <script src="../assets/js/supabase.js"></script>
+  <script src="../assets/js/admin.js"></script>
+  </body>
+</html>

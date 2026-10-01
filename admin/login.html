@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login | Raisoni Nexus</title>
+    <link rel="stylesheet" href="../assets/css/style.css" />
+    <link rel="stylesheet" href="../assets/css/themes.css" />
+    <link rel="stylesheet" href="../assets/css/admin.css" />
+    <link rel="stylesheet" href="../assets/css/responsive.css" />
+  </head>
+  <body class="admin-body admin-login-body">
+    <main class="section">
+      <div class="container">
+        <div class="form-panel" style="max-width: 520px; margin: 80px auto 0;">
+          <div style="text-align:center; margin-bottom: 20px;">
+            <div class="brand-mark" style="margin:0 auto 16px;">RN</div>
+            <h2>Admin Login</h2>
+            <p style="color:var(--muted);">Secure dashboard access for college administrators.</p>
+          </div>
+          <form id="adminLoginForm">
+            <div class="form-grid">
+              <div class="full"><label for="adminEmail">Admin email</label><input class="input" id="adminEmail" name="email" type="email" autocomplete="username" placeholder="Admin email" required /></div>
+              <div class="full"><label for="adminPassword">Password</label><input class="input" id="adminPassword" name="password" type="password" autocomplete="current-password" placeholder="Password" required /></div>
+              <div class="full"><button class="primary-btn" type="submit">Login to dashboard</button></div>
+              <div class="full" style="text-align:center;"><a href="#" data-admin-reset>Forgot password?</a></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+    <div class="toast-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-config.js"></script>
+    <script src="../assets/js/supabase.js"></script>
+    <script src="../assets/js/theme.js"></script>
+    <script src="../assets/js/main.js"></script>
+    <script src="../assets/js/admin-auth.js"></script>
+  </body>
+</html>

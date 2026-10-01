@@ -1,0 +1,347 @@
+:root {
+  --catalog-teal: #087f8c;
+  --catalog-teal-soft: #e6f5f4;
+  --catalog-coral: #c2410c;
+  --catalog-coral-soft: #fff0e8;
+  --catalog-rose: #be123c;
+  --catalog-rose-soft: #fff0f3;
+  --catalog-green: #15803d;
+  --catalog-green-soft: #eaf7ed;
+  --catalog-amber: #a16207;
+  --catalog-amber-soft: #fff6dc;
+  --catalog-blue: #1d4ed8;
+  --catalog-blue-soft: #edf3ff;
+  --catalog-cyan: #0e7490;
+  --catalog-cyan-soft: #e8f7fb;
+  --catalog-ink: #17252d;
+}
+
+.branch-directory-page,
+.branch-detail-page {
+  color: var(--catalog-ink);
+  background-color: #f4f8f6;
+  background-image:
+    linear-gradient(rgba(8, 127, 140, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(8, 127, 140, 0.035) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+.branch-directory-page .page-header,
+.branch-detail-page .page-header {
+  position: relative;
+  overflow: hidden;
+  padding: 3.5rem 0;
+  color: #fff;
+  background-color: #125f62;
+  background-image:
+    repeating-linear-gradient(135deg, transparent 0 22px, rgba(255, 255, 255, 0.07) 22px 23px),
+    linear-gradient(112deg, #0f766e 0%, #087f8c 42%, #be123c 74%, #c2410c 100%);
+}
+
+.branch-directory-page .page-header .container,
+.branch-detail-page .page-header .container {
+  position: relative;
+  z-index: 1;
+}
+
+.branch-directory-page .page-header .section-title,
+.branch-detail-page .page-header .section-title {
+  max-width: 850px;
+  color: #fff;
+  font-size: clamp(2rem, 3vw, 3rem);
+  letter-spacing: 0;
+}
+
+.branch-directory-page .page-header .lead,
+.branch-detail-page .page-header .lead {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.branch-directory-page .breadcrumbs,
+.branch-detail-page .breadcrumbs,
+.branch-directory-page .breadcrumbs a,
+.branch-detail-page .breadcrumbs a {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.branch-directory-page main > .section,
+.branch-detail-page main > .section {
+  padding-top: 3.5rem;
+  padding-bottom: 3.5rem;
+}
+
+.branch-directory-page #branchesGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.2rem;
+}
+
+.branch-detail-page #branchResourceTypes {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.branch-detail-page #branchSemesters {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.branch-directory-page .branch-card,
+.branch-detail-page #branchResourceTypes > .card,
+.branch-detail-page #branchSemesters > .card {
+  --catalog-accent: var(--catalog-teal);
+  --catalog-tint: var(--catalog-teal-soft);
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 218px;
+  flex-direction: column;
+  align-items: flex-start;
+  overflow: hidden;
+  border: 1px solid rgba(23, 37, 45, 0.1);
+  border-radius: 16px;
+  padding: 1.35rem;
+  background: linear-gradient(145deg, #fff 4%, var(--catalog-tint) 150%);
+  box-shadow: 0 10px 28px rgba(23, 37, 45, 0.07);
+  transition: transform 280ms ease, box-shadow 280ms ease, border-color 280ms ease;
+  animation: catalogCardEnter 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.branch-directory-page .branch-card:not(.visible),
+.branch-detail-page #branchResourceTypes > .card:not(.visible),
+.branch-detail-page #branchSemesters > .card:not(.visible) {
+  opacity: 1;
+  transform: none;
+}
+
+.branch-directory-page .branch-card::before,
+.branch-detail-page #branchResourceTypes > .card::before,
+.branch-detail-page #branchSemesters > .card::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--catalog-accent), #f59e0b, #ec4899, var(--catalog-accent));
+  background-size: 220% 100%;
+  animation: catalogStripeFlow 7s linear infinite;
+  content: "";
+}
+
+.branch-directory-page .branch-card:hover,
+.branch-detail-page #branchResourceTypes > .card:hover,
+.branch-detail-page #branchSemesters > .card:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--catalog-accent) 42%, white);
+  box-shadow: 0 18px 36px rgba(23, 37, 45, 0.14);
+}
+
+.branch-directory-page .branch-card .meta {
+  display: inline-flex;
+  width: auto;
+  margin-top: auto;
+  margin-bottom: 1rem;
+  border: 1px solid color-mix(in srgb, var(--catalog-accent) 24%, white);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  background: var(--catalog-tint);
+  color: var(--catalog-accent);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.branch-directory-page .branch-card h3,
+.branch-detail-page #branchResourceTypes > .card h3,
+.branch-detail-page #branchSemesters > .card h3 {
+  margin: 0.25rem 0 0.6rem;
+  color: var(--catalog-ink);
+  font-size: 1.12rem;
+  line-height: 1.35;
+}
+
+.branch-directory-page .branch-card p,
+.branch-detail-page #branchResourceTypes > .card p,
+.branch-detail-page #branchSemesters > .card p {
+  margin: 0 0 1rem;
+  color: #50616a;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.branch-directory-page .branch-card .secondary-btn,
+.branch-detail-page #branchResourceTypes > .card .secondary-btn,
+.branch-detail-page #branchSemesters > .card .secondary-btn {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  border-color: var(--catalog-accent);
+  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  background: var(--catalog-accent);
+  color: #fff;
+  font-weight: 750;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.branch-directory-page .branch-card .secondary-btn:hover,
+.branch-detail-page #branchResourceTypes > .card .secondary-btn:hover,
+.branch-detail-page #branchSemesters > .card .secondary-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.branch-directory-page .branch-card:nth-child(7n + 2),
+.branch-detail-page #branchResourceTypes > .card:nth-child(7n + 2),
+.branch-detail-page #branchSemesters > .card:nth-child(7n + 2) {
+  --catalog-accent: var(--catalog-coral);
+  --catalog-tint: var(--catalog-coral-soft);
+}
+
+.branch-directory-page .branch-card:nth-child(7n + 3),
+.branch-detail-page #branchResourceTypes > .card:nth-child(7n + 3),
+.branch-detail-page #branchSemesters > .card:nth-child(7n + 3) {
+  --catalog-accent: var(--catalog-rose);
+  --catalog-tint: var(--catalog-rose-soft);
+}
+
+.branch-directory-page .branch-card:nth-child(7n + 4),
+.branch-detail-page #branchResourceTypes > .card:nth-child(7n + 4),
+.branch-detail-page #branchSemesters > .card:nth-child(7n + 4) {
+  --catalog-accent: var(--catalog-green);
+  --catalog-tint: var(--catalog-green-soft);
+}
+
+.branch-directory-page .branch-card:nth-child(7n + 5),
+.branch-detail-page #branchResourceTypes > .card:nth-child(7n + 5),
+.branch-detail-page #branchSemesters > .card:nth-child(7n + 5) {
+  --catalog-accent: var(--catalog-amber);
+  --catalog-tint: var(--catalog-amber-soft);
+}
+
+.branch-directory-page .branch-card:nth-child(7n + 6),
+.branch-detail-page #branchResourceTypes > .card:nth-child(7n + 6),
+.branch-detail-page #branchSemesters > .card:nth-child(7n + 6) {
+  --catalog-accent: var(--catalog-blue);
+  --catalog-tint: var(--catalog-blue-soft);
+}
+
+.branch-directory-page .branch-card:nth-child(7n),
+.branch-detail-page #branchResourceTypes > .card:nth-child(7n),
+.branch-detail-page #branchSemesters > .card:nth-child(7n) {
+  --catalog-accent: var(--catalog-cyan);
+  --catalog-tint: var(--catalog-cyan-soft);
+}
+
+.branch-directory-page .branch-card:nth-child(3n + 2),
+.branch-detail-page #branchResourceTypes > .card:nth-child(4n + 2),
+.branch-detail-page #branchSemesters > .card:nth-child(4n + 2) {
+  animation-delay: 70ms;
+}
+
+.branch-directory-page .branch-card:nth-child(3n),
+.branch-detail-page #branchResourceTypes > .card:nth-child(4n + 3),
+.branch-detail-page #branchSemesters > .card:nth-child(4n + 3) {
+  animation-delay: 140ms;
+}
+
+.branch-detail-page #branchResourceTypes > .card:nth-child(4n),
+.branch-detail-page #branchSemesters > .card:nth-child(4n) {
+  animation-delay: 210ms;
+}
+
+.branch-directory-page .section-kicker,
+.branch-detail-page .section-kicker {
+  border: 1px solid rgba(8, 127, 140, 0.16);
+  background: #e3f4f2;
+  color: #08656b;
+  letter-spacing: 0.08em;
+}
+
+.branch-detail-page #branchSemesters > .card {
+  min-height: 180px;
+}
+
+body.dark-mode.branch-directory-page .branch-card,
+body.dark-mode.branch-detail-page #branchResourceTypes > .card,
+body.dark-mode.branch-detail-page #branchSemesters > .card {
+  border-color: rgba(210, 235, 235, 0.14);
+  background: linear-gradient(145deg, #14252b 4%, color-mix(in srgb, var(--catalog-accent) 20%, #14252b) 150%);
+}
+
+body.dark-mode.branch-directory-page .branch-card h3,
+body.dark-mode.branch-detail-page #branchResourceTypes > .card h3,
+body.dark-mode.branch-detail-page #branchSemesters > .card h3 {
+  color: #eef8f7;
+}
+
+body.dark-mode.branch-directory-page .branch-card p,
+body.dark-mode.branch-detail-page #branchResourceTypes > .card p,
+body.dark-mode.branch-detail-page #branchSemesters > .card p {
+  color: #c4d7d8;
+}
+
+body.dark-mode.branch-directory-page .section-kicker,
+body.dark-mode.branch-detail-page .section-kicker {
+  border-color: rgba(112, 219, 203, 0.28);
+  background: rgba(8, 127, 140, 0.22);
+  color: #a5f3e7;
+}
+
+@keyframes catalogStripeFlow {
+  to { background-position: 220% 0; }
+}
+
+@keyframes catalogCardEnter {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 1050px) {
+  .branch-directory-page #branchesGrid,
+  .branch-detail-page #branchResourceTypes,
+  .branch-detail-page #branchSemesters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .branch-directory-page .page-header,
+  .branch-detail-page .page-header {
+    padding: 2.5rem 0;
+  }
+
+  .branch-directory-page main > .section,
+  .branch-detail-page main > .section {
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .branch-directory-page #branchesGrid,
+  .branch-detail-page #branchResourceTypes,
+  .branch-detail-page #branchSemesters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .branch-directory-page .branch-card,
+  .branch-detail-page #branchResourceTypes > .card,
+  .branch-detail-page #branchSemesters > .card {
+    min-height: 190px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .branch-directory-page .branch-card::before,
+  .branch-detail-page #branchResourceTypes > .card::before,
+  .branch-detail-page #branchSemesters > .card::before {
+    animation: none;
+  }
+
+  .branch-directory-page .branch-card,
+  .branch-detail-page #branchResourceTypes > .card,
+  .branch-detail-page #branchSemesters > .card {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

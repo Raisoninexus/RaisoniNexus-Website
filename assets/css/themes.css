@@ -1,0 +1,54 @@
+:root {
+  color-scheme: light;
+}
+
+body.dark-mode {
+  color-scheme: dark;
+  --surface: rgba(15, 23, 42, 0.8);
+  --surface-strong: #111827;
+  --surface-alt: #1f2937;
+  --text: #e2e8f0;
+  --muted: #cbd5e1;
+  --line: rgba(148, 163, 184, 0.22);
+  --light: #0b1120;
+  background: linear-gradient(180deg, #0b1120 0%, #0f172a 40%, #111827 100%);
+  color: var(--text);
+}
+body.dark-mode .topbar {
+  background: rgba(15, 23, 42, 0.8);
+}
+body.dark-mode .card,
+body.dark-mode .branch-card,
+body.dark-mode .resource-card,
+body.dark-mode .form-panel,
+body.dark-mode .list-item,
+body.dark-mode .cta-panel,
+body.dark-mode .dashboard-card,
+body.dark-mode .hero-panel,
+body.dark-mode .quick-card,
+body.dark-mode .filter-panel,
+body.dark-mode .input,
+body.dark-mode .select,
+body.dark-mode .textarea,
+body.dark-mode .nav-links a {
+  background: rgba(15, 23, 42, 0.94);
+  border-color: rgba(148, 163, 184, 0.16);
+  color: var(--text);
+}
+body.dark-mode .secondary-btn,
+body.dark-mode .icon-btn,
+body.dark-mode .ghost-btn,
+body.dark-mode .input,
+body.dark-mode .select,
+body.dark-mode .textarea {
+  background: rgba(15,23,42,0.8);
+  color: var(--text);
+}
+body.dark-mode .footer {
+  background: #020817;
+}
+body.dark-mode .quick-card::before,
+body.dark-mode .resource-card::before,
+body.dark-mode .branch-card::before {
+  opacity: 0.2;
+}

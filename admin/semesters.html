@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Semesters | Raisoni Nexus</title><link rel="stylesheet" href="../assets/css/style.css" /><link rel="stylesheet" href="../assets/css/admin.css" /><link rel="stylesheet" href="../assets/css/themes.css" /><link rel="stylesheet" href="../assets/css/responsive.css" /></head>
+  <body class="admin-body">
+    <div class="admin-shell">
+      <aside class="admin-sidebar open"><div class="admin-brand"><span class="brand-mark">RN</span><strong>Raisoni Nexus</strong></div><nav class="admin-nav"><a href="dashboard.html">Dashboard</a><a href="resources.html">Resources</a><a href="upload.html">Upload Resource</a><a href="branches.html">Branches</a><a class="active" href="semesters.html">Semesters</a><a href="subjects.html">Subjects</a><a href="users.html">Users</a><a href="notices.html">Notices</a><a href="analytics.html">Analytics</a><a href="settings.html">Settings</a><a href="login.html">Logout</a></nav></aside>
+      <main class="admin-main"><div class="admin-topbar"><div><button class="primary-btn admin-sidebar-toggle">☰ Menu</button></div><div><strong>Semesters</strong></div></div><div class="admin-panel"><h3>Add semester</h3><form id="semesterForm"><div class="form-grid"><div><label for="semesterName">Semester name</label><input class="input" id="semesterName" name="name" required /></div><div><label for="semesterNumber">Number</label><input class="input" id="semesterNumber" name="number" type="number" min="1" max="16" required /></div><div class="full"><button class="primary-btn" type="submit">Save semester</button></div></div></form></div><div class="admin-panel"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Number</th><th>Actions</th></tr></thead><tbody id="adminSemestersBody"></tbody></table></div></div></main>
+    </div>
+    <script src="../assets/js/theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-config.js"></script>
+  <script src="../assets/js/supabase.js"></script>
+  <script src="../assets/js/admin.js"></script>
+  </body>
+</html>

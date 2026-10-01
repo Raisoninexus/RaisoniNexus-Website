@@ -1,0 +1,57 @@
+.reveal {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.75s ease, transform 0.75s ease;
+}
+.motion-ready .reveal:not(.visible) {
+  opacity: 0;
+  transform: translateY(28px) scale(0.98);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.section-card,
+.quick-card,
+.branch-card,
+.resource-card,
+.step,
+.stat-card,
+.list-item {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.motion-ready .section-card:not(.visible),
+.motion-ready .quick-card:not(.visible),
+.motion-ready .branch-card:not(.visible),
+.motion-ready .resource-card:not(.visible),
+.motion-ready .step:not(.visible),
+.motion-ready .stat-card:not(.visible),
+.motion-ready .list-item:not(.visible) {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.section-card.visible,
+.quick-card.visible,
+.branch-card.visible,
+.resource-card.visible,
+.step.visible,
+.stat-card.visible,
+.list-item.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal, .section-card, .quick-card, .branch-card, .resource-card, .step, .stat-card, .list-item {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
