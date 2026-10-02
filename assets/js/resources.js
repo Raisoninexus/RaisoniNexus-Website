@@ -10,6 +10,7 @@ function mapSupabaseResource(row) {
     subject: row.subjects?.name || 'General',
     subjectId: row.subject_id || '',
     type: row.resource_type || 'Resource',
+    fileName: row.file_name || '',
     fileType: ((row.file_type?.includes('/') ? row.file_name?.split('.').pop() : row.file_type) || row.file_name?.split('.').pop() || 'FILE').toUpperCase(),
     fileUrl: row.file_url || '',
     downloads: row.download_count || 0,
@@ -68,10 +69,12 @@ function createResourceCard(item) {
     preview.textContent = 'Preview';
     const download = document.createElement('a');
     download.className = 'primary-btn download-btn';
-    download.href = item.fileUrl;
-    download.target = '_blank';
-    download.rel = 'noopener noreferrer';
-    download.download = '';
+    const downloadUrl = new URL(item.fileUrl);
+    const extension = item.fileType.toLowerCase() === 'file' ? 'pdf' : item.fileType.toLowerCase();
+    const fileName = item.fileName || `${item.title}.${extension}`;
+    downloadUrl.searchParams.set('download', fileName);
+    download.href = downloadUrl.toString();
+    download.download = fileName;
     download.dataset.resourceId = item.id;
     download.textContent = 'Download';
     actions.append(preview, download);

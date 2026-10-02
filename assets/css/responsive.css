@@ -51,4 +51,16 @@
   .container { width: min(var(--container), calc(100% - 22px)); }
   .brand { font-size: 1.12rem; }
   .brand-mark { width: 36px; height: 36px; }
+  .toast-container {
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+  .toast {
+    width: 100%;
+    min-width: 0;
+    max-width: 360px;
+    justify-self: end;
+    overflow-wrap: anywhere;
+  }
 }
