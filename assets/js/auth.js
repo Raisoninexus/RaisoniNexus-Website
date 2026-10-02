@@ -1,6 +1,13 @@
 const GOOGLE_LOGIN_ENABLED = false;
 let studentAuthMode = 'login';
 
+function getEmailConfirmationRedirect() {
+  const localHosts = ['localhost', '127.0.0.1', '::1'];
+  const isLocalOrigin = window.location.protocol === 'file:' || localHosts.includes(window.location.hostname);
+  const origin = isLocalOrigin ? 'https://raisoninexus-website.vercel.app' : window.location.origin;
+  return new URL('/?welcome=1', origin).href;
+}
+
 async function renderAuthContent() {
   const authPanel = document.querySelector('[data-auth-panel]');
   if (!authPanel) return;
@@ -146,7 +153,7 @@ async function handleStudentAuth(event) {
         email: String(data.email).trim(),
         password: data.password,
         options: {
-          emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
+          emailRedirectTo: getEmailConfirmationRedirect(),
           data: { full_name: fullName }
         }
       });
@@ -166,7 +173,7 @@ async function handleStudentAuth(event) {
         return;
       }
       showToast('Account created successfully.', 'success');
-      await renderAuthContent();
+      window.location.assign('index.html?welcome=1');
       return;
     }
 
@@ -185,7 +192,8 @@ async function handleStudentAuth(event) {
       window.location.href = 'admin/dashboard.html';
       return;
     }
-    await renderAuthContent();
+    window.location.assign('index.html?welcome=1');
+    return;
   } catch (error) {
     if (studentAuthMode === 'signup') {
       console.error('Student signup failed:', { code: error?.code, status: error?.status });

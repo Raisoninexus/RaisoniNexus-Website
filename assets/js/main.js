@@ -1,4 +1,30 @@
+async function showStudentWelcome() {
+  if (new URLSearchParams(window.location.search).get('welcome') !== '1') return;
+
+  const session = await window.rnSupabaseUtils?.getCurrentUserSession();
+  if (!session) return;
+
+  const profile = await window.rnSupabaseUtils.getUserProfile();
+  const displayName = profile?.name
+    || session.user?.user_metadata?.full_name
+    || session.user?.email?.split('@')[0]
+    || 'Student';
+  const heroActions = document.querySelector('.hero-actions');
+  if (!heroActions) return;
+
+  const welcomeMessage = document.createElement('p');
+  welcomeMessage.className = 'student-welcome';
+  welcomeMessage.setAttribute('role', 'status');
+  welcomeMessage.textContent = `Welcome, ${displayName}! You are signed in.`;
+  heroActions.before(welcomeMessage);
+
+  const url = new URL(window.location.href);
+  url.searchParams.delete('welcome');
+  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  showStudentWelcome();
   document.querySelector('.nav-actions a[href="admin/login.html"]')?.remove();
 
   document.querySelectorAll('.footer li').forEach((item) => {
