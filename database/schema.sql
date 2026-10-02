@@ -123,6 +123,17 @@ CREATE TABLE IF NOT EXISTS public.notices (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS public.material_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  requester_name VARCHAR(120) NOT NULL CHECK (char_length(btrim(requester_name)) BETWEEN 2 AND 120),
+  requester_email VARCHAR(320) NOT NULL CHECK (position('@' IN requester_email) > 1),
+  requested_material VARCHAR(180) NOT NULL CHECK (char_length(btrim(requested_material)) BETWEEN 2 AND 180),
+  details TEXT CHECK (details IS NULL OR char_length(details) <= 2000),
+  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'in_progress', 'fulfilled')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -194,3 +205,5 @@ CREATE INDEX IF NOT EXISTS idx_resources_semester ON public.resources(semester_i
 CREATE INDEX IF NOT EXISTS idx_resources_subject ON public.resources(subject_id);
 CREATE INDEX IF NOT EXISTS idx_resources_status ON public.resources(status);
 CREATE INDEX IF NOT EXISTS idx_notices_published ON public.notices(published);
+CREATE INDEX IF NOT EXISTS idx_material_requests_created ON public.material_requests(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_material_requests_status ON public.material_requests(status);

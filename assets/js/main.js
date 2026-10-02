@@ -1,4 +1,28 @@
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelector('.nav-actions a[href="admin/login.html"]')?.remove();
+
+  document.querySelectorAll('.footer li').forEach((item) => {
+    if (!item.textContent.trim().startsWith('Email:')) return;
+    const email = 'RaisoniNexus@gmail.com';
+    const link = document.createElement('a');
+    link.href = `mailto:${email}`;
+    link.textContent = email;
+    item.replaceChildren(document.createTextNode('Email: '), link);
+  });
+
+  document.querySelectorAll('[data-social-link]').forEach((link) => {
+    const url = window.RN_SOCIAL_LINKS?.[link.dataset.socialLink];
+    if (!url) {
+      link.removeAttribute('href');
+      link.setAttribute('aria-disabled', 'true');
+      return;
+    }
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.removeAttribute('aria-disabled');
+  });
+
   const mobileToggle = document.querySelector('.mobile-toggle');
   const nav = document.querySelector('.nav-links');
   if (mobileToggle && nav) {

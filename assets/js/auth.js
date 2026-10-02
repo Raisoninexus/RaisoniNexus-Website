@@ -65,7 +65,7 @@ async function renderAuthContent() {
       <form id="studentLoginForm">
         <div class="form-grid">
           ${studentAuthMode === 'signup' ? '<div class="full"><label for="studentFullName">Full name</label><input class="input" id="studentFullName" type="text" name="fullName" autocomplete="name" required /></div>' : ''}
-          <div class="full"><label for="studentEmail">College email</label><input class="input" id="studentEmail" type="email" name="email" autocomplete="email" required /></div>
+          <div class="full"><label for="studentEmail">Email ID</label><input class="input" id="studentEmail" type="email" name="email" autocomplete="email" required /></div>
           <div class="full"><label for="studentPassword">Password</label><input class="input" id="studentPassword" type="password" name="password" minlength="8" autocomplete="${studentAuthMode === 'signup' ? 'new-password' : 'current-password'}" required /></div>
           <div class="full"><button class="primary-btn" type="submit">${studentAuthMode === 'signup' ? 'Create account' : 'Login'}</button></div>
         </div>

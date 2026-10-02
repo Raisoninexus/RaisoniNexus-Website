@@ -913,6 +913,81 @@ async function loadRecentUploads() {
   });
 }
 
+async function loadMaterialRequests() {
+  const container = document.getElementById('materialRequests');
+  if (!container) return;
+  const count = document.getElementById('materialRequestCount');
+  const { data, error } = await window.rnSupabaseClient
+    .from('material_requests')
+    .select('id, requester_name, requester_email, requested_material, details, status, created_at')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error('Material request inbox failed:', { code: error.code, status: error.status });
+    container.textContent = error.code === '42P01'
+      ? 'Apply the updated database schema and security policies to enable the request inbox.'
+      : 'Unable to load material requests.';
+    if (count) count.textContent = '--';
+    return;
+  }
+
+  const requests = data || [];
+  const newCount = requests.filter((request) => request.status === 'new').length;
+  if (count) count.textContent = `${newCount} new`;
+  container.replaceChildren();
+  if (!requests.length) {
+    container.textContent = 'No material requests yet.';
+    return;
+  }
+
+  requests.forEach((request) => {
+    const item = document.createElement('div');
+    item.className = 'list-item';
+    const details = document.createElement('div');
+    const title = document.createElement('strong');
+    title.textContent = request.requested_material;
+    const requester = document.createElement('p');
+    requester.textContent = `${request.requester_name} - ${request.requester_email}`;
+    details.append(title, requester);
+    if (request.details) {
+      const description = document.createElement('p');
+      description.textContent = request.details;
+      details.appendChild(description);
+    }
+    const actions = document.createElement('div');
+    actions.className = 'admin-actions';
+    const status = document.createElement('span');
+    status.className = `status-badge ${request.status === 'fulfilled' ? 'status-published' : 'status-draft'}`;
+    status.textContent = request.status.replace('_', ' ');
+    actions.appendChild(status);
+    if (request.status !== 'fulfilled') {
+      const complete = document.createElement('button');
+      complete.className = 'secondary-btn';
+      complete.type = 'button';
+      complete.textContent = 'Mark fulfilled';
+      complete.addEventListener('click', async () => {
+        complete.disabled = true;
+        const { error: updateError } = await window.rnSupabaseClient
+          .from('material_requests')
+          .update({ status: 'fulfilled' })
+          .eq('id', request.id);
+        if (updateError) {
+          complete.disabled = false;
+          showToast('Unable to update this request.', 'error');
+          console.error('Material request update failed:', { code: updateError.code, status: updateError.status });
+          return;
+        }
+        showToast('Request marked fulfilled.', 'success');
+        await loadMaterialRequests();
+      });
+      actions.appendChild(complete);
+    }
+    item.append(details, actions);
+    container.appendChild(item);
+  });
+}
+
 function downloadCsv(fileName, rows) {
   const csv = rows.map((line) => line.map((value) => `"${String(value || '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
@@ -1039,9 +1114,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       loadAdminResources(),
       loadAdminUsers(),
       loadRecentUploads(),
+      loadMaterialRequests(),
       loadTaxonomyTables(),
       loadAdminAnalytics()
     ]);
+    document.getElementById('refreshMaterialRequests')?.addEventListener('click', loadMaterialRequests);
+    window.setInterval(loadMaterialRequests, 60_000);
     bindTaxonomyForms();
     bindSubjectCsvImport();
     bindAdminPasswordForm();

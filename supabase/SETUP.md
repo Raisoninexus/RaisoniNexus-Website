@@ -2,9 +2,9 @@
 
 The frontend is configured for the Raisoni Nexus Supabase project. Run these SQL files in the Supabase Dashboard under **SQL Editor**, in this order:
 
-1. Run `database/schema.sql` from the project root. It creates the tables and Auth profile trigger, backfills profiles for existing Auth users, and records downloads.
+1. Run `database/schema.sql` from the project root. It creates the tables, including the material-request inbox, and Auth profile trigger, backfills profiles for existing Auth users, and records downloads.
 2. Run `database/seed.sql` to add the nine catalog branches, semesters 1–8, the Information Technology branch, and the requested Semester 2 subjects for CSE AIML, CSE AI, COE, and IT. It is safe to run more than once.
-3. Run `supabase/rls.sql`. It replaces the recursive profile policy with a role-check function, enables row-level security, and creates the Storage bucket policies.
+3. Run `supabase/rls.sql`. It replaces the recursive profile policy with a role-check function, enables row-level security, and creates the Storage bucket policies. It allows students to submit material requests while restricting request reads and updates to admins.
 
 The existing live project currently reports `infinite recursion detected in policy for relation "profiles"` until the updated RLS SQL is applied.
 
@@ -25,6 +25,8 @@ If using the earlier local server port, add `http://127.0.0.1:8000/**` as well.
 The project code and database schema do not impose a student account-count limit. Supabase Auth applies signup rate limits outside this repository. Its documented defaults include 30 signup/sign-in requests per 5 minutes per IP and 2 emails per hour with the built-in email provider. Check **Authentication → Rate Limits** in the Supabase Dashboard if signups return a rate-limit error. For higher verification-email volume, configure a custom SMTP provider under **Authentication → SMTP Settings**; do not put SMTP credentials in frontend files.
 
 The registration form maps Supabase Auth error codes to student-safe messages. If an error is not one of the recognized rate-limit codes, use the Supabase Auth logs to identify the actual server-side cause.
+
+Public footer email links are set in `assets/js/main.js`. Add official Instagram, LinkedIn, and campus URLs to `assets/js/site-config.js` when available; links remain inactive until configured.
 
 ## Google student sign-in
 

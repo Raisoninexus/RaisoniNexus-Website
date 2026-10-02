@@ -45,6 +45,10 @@
             <div class="dashboard-panel-heading"><div><span class="dashboard-eyebrow">CONTENT</span><h2>Recent uploads</h2></div><a href="resources.html">View all <span aria-hidden="true">→</span></a></div>
             <div id="recentUploads" class="list-stack" aria-live="polite"></div>
           </section>
+          <section class="admin-panel dashboard-panel reveal">
+            <div class="dashboard-panel-heading"><div><span class="dashboard-eyebrow">INBOX</span><h2>Material requests <span id="materialRequestCount" class="status-badge status-draft">0 new</span></h2></div><button class="secondary-btn" type="button" id="refreshMaterialRequests">Refresh</button></div>
+            <div id="materialRequests" class="list-stack" aria-live="polite">Loading requests...</div>
+          </section>
           <section class="admin-panel dashboard-panel dashboard-actions-panel reveal">
             <div class="dashboard-panel-heading"><div><span class="dashboard-eyebrow">SHORTCUTS</span><h2>Common tasks</h2></div></div>
             <div class="dashboard-action-list">

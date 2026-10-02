@@ -6,6 +6,7 @@ ALTER TABLE public.resources ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookmarks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.downloads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.material_requests ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN
@@ -79,6 +80,25 @@ USING (published = TRUE);
 DROP POLICY IF EXISTS "Admins can manage notices" ON public.notices;
 CREATE POLICY "Admins can manage notices"
 ON public.notices FOR ALL
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
+
+REVOKE ALL ON TABLE public.material_requests FROM anon, authenticated;
+GRANT INSERT (user_id, requester_name, requester_email, requested_material, details)
+ON TABLE public.material_requests TO anon, authenticated;
+GRANT SELECT, UPDATE, DELETE ON TABLE public.material_requests TO authenticated;
+
+DROP POLICY IF EXISTS "Public can submit material requests" ON public.material_requests;
+CREATE POLICY "Public can submit material requests"
+ON public.material_requests FOR INSERT TO anon, authenticated
+WITH CHECK (
+  status = 'new'
+  AND (user_id IS NULL OR user_id = (SELECT auth.uid()))
+);
+
+DROP POLICY IF EXISTS "Admins can manage material requests" ON public.material_requests;
+CREATE POLICY "Admins can manage material requests"
+ON public.material_requests FOR ALL TO authenticated
 USING (public.is_admin())
 WITH CHECK (public.is_admin());
 
