@@ -1,5 +1,5 @@
 window.RN_SOCIAL_LINKS = {
-  instagram: '',
+  instagram: 'https://www.instagram.com/raisoninexus/',
   linkedin: '',
   campus: ''
 };
