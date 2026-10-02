@@ -88,3 +88,25 @@ window.rnSupabaseUtils = {
   ensureUserProfile,
   isAdminUser
 };
+
+function updateStudentNav(session) {
+  document.querySelectorAll('.topbar a[href="login.html"], .topbar a[data-student-auth-link]').forEach((link) => {
+    link.dataset.studentAuthLink = 'true';
+    link.href = session ? 'profile.html' : 'login.html';
+    link.textContent = session ? 'Profile' : 'Login';
+  });
+}
+
+function initializeStudentNav() {
+  updateStudentNav(null);
+  if (!window.rnSupabaseClient) return;
+  window.rnSupabaseClient.auth.onAuthStateChange((_event, session) => {
+    updateStudentNav(session);
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeStudentNav, { once: true });
+} else {
+  initializeStudentNav();
+}

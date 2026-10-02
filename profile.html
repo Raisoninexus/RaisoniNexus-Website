@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Student Profile | Raisoni Nexus</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="stylesheet" href="assets/css/themes.css" />
+    <link rel="stylesheet" href="assets/css/animations.css" />
+    <link rel="stylesheet" href="assets/css/responsive.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container navbar">
+        <a class="brand" href="index.html"><span class="brand-mark">RN</span><span>Raisoni Nexus</span></a>
+        <nav aria-label="Main navigation">
+          <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="branches.html">Branches</a></li>
+            <li><a href="resources.html">Resources</a></li>
+          </ul>
+        </nav>
+        <div class="nav-actions">
+          <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">🌙</button>
+          <a class="primary-btn" href="login.html">Login</a>
+          <button class="icon-btn mobile-toggle" aria-label="Open menu">☰</button>
+        </div>
+      </div>
+    </header>
+    <main>
+      <section class="section">
+        <div class="container">
+          <div class="form-panel">
+            <h1>Student Profile</h1>
+            <p data-profile-status aria-live="polite">Loading profile...</p>
+            <div class="form-grid" data-profile-details hidden>
+              <div class="full"><strong>Full name</strong><p data-profile-name></p></div>
+              <div class="full"><strong>Email</strong><p data-profile-email></p></div>
+              <div class="full"><strong>Branch</strong><p data-profile-branch></p></div>
+              <div class="full"><strong>Semester</strong><p data-profile-semester></p></div>
+              <div class="full"><button class="secondary-btn" type="button" data-profile-logout>Log out</button></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div class="toast-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase-config.js"></script>
+    <script src="assets/js/supabase.js"></script>
+    <script src="assets/js/theme.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/profile.js"></script>
+    <script src="assets/js/animations.js"></script>
+  </body>
+</html>

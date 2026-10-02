@@ -26,3 +26,43 @@ WHERE NOT EXISTS (
   FROM public.semesters existing
   WHERE existing.number = semester_number
 );
+
+INSERT INTO public.branches (name, short_name, description)
+SELECT 'Information Technology', 'IT', 'Information technology, software systems and computing.'
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM public.branches existing
+  WHERE lower(existing.short_name) = 'it'
+);
+
+WITH target_branches AS (
+  SELECT id
+  FROM public.branches
+  WHERE short_name IN ('CSE AIML', 'CSE AI', 'COE', 'IT')
+),
+target_semester AS (
+  SELECT id
+  FROM public.semesters
+  WHERE number = 2
+),
+seed_subjects (name) AS (
+  VALUES
+    ('Engineering Physics'),
+    ('M&DC'),
+    ('IKS'),
+    ('Digital Fabrication'),
+    ('FDA'),
+    ('English')
+)
+INSERT INTO public.subjects (name, branch_id, semester_id)
+SELECT seed_subjects.name, target_branches.id, target_semester.id
+FROM target_branches
+CROSS JOIN target_semester
+CROSS JOIN seed_subjects
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM public.subjects existing
+  WHERE existing.branch_id = target_branches.id
+    AND existing.semester_id = target_semester.id
+    AND lower(existing.name) = lower(seed_subjects.name)
+);

@@ -1,7 +1,9 @@
 let revealObserver;
 
 function setupRevealAnimations(root = document) {
-  document.documentElement.classList.add('motion-ready');
+  if (document.visibilityState === 'visible') {
+    document.documentElement.classList.add('motion-ready');
+  }
   if (!revealObserver) {
     revealObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
@@ -18,6 +20,12 @@ function setupRevealAnimations(root = document) {
     revealObserver.observe(element);
   });
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    document.documentElement.classList.add('motion-ready');
+  }
+});
 
 window.addEventListener('rn-dynamic-content', (event) => {
   const root = event.detail || document;

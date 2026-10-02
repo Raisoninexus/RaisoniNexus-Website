@@ -83,6 +83,36 @@ async function renderAuthContent() {
   `;
 }
 
+function getSignupErrorMessage(error) {
+  switch (error?.code) {
+    case 'email_exists':
+    case 'user_already_exists':
+      return 'An account already exists for this email. Log in or reset your password.';
+    case 'over_email_send_rate_limit':
+      return 'The email sending limit has been reached. Wait before trying again, or contact the administrator about custom email delivery.';
+    case 'over_request_rate_limit':
+      return 'Too many signup attempts came from this network. Wait a few minutes, then try again.';
+    case 'signup_disabled':
+    case 'email_provider_disabled':
+      return 'Student account creation is currently disabled. Contact the administrator.';
+    case 'weak_password':
+      return 'Choose a stronger password that meets the password requirements.';
+    case 'email_address_invalid':
+      return 'Enter a valid email address and try again.';
+  }
+
+  if (error?.status === 429) {
+    return 'Too many signup attempts. Wait a few minutes, then try again.';
+  }
+  if (error?.status >= 500) {
+    return 'The account service could not save your account right now. Try again later or contact the administrator.';
+  }
+  if (error?.name === 'AuthRetryableFetchError' || error instanceof TypeError) {
+    return 'Could not reach the account service. Check your connection and try again.';
+  }
+  return 'We could not create the account with those details. Check them and try again.';
+}
+
 async function handleStudentAuth(event) {
   event.preventDefault();
   const form = event.target;
@@ -121,6 +151,13 @@ async function handleStudentAuth(event) {
         }
       });
       if (error) throw error;
+      if (authData.user?.identities?.length === 0) {
+        studentAuthMode = 'login';
+        form.reset();
+        showToast('An account already exists for this email. Log in or reset your password.', 'error');
+        await renderAuthContent();
+        return;
+      }
       studentAuthMode = 'login';
       form.reset();
       if (!authData.session) {
@@ -150,7 +187,10 @@ async function handleStudentAuth(event) {
     }
     await renderAuthContent();
   } catch (error) {
-    showToast(error.message || 'Authentication failed.', 'error');
+    if (studentAuthMode === 'signup') {
+      console.error('Student signup failed:', { code: error?.code, status: error?.status });
+    }
+    showToast(studentAuthMode === 'signup' ? getSignupErrorMessage(error) : error.message || 'Authentication failed.', 'error');
   } finally {
     if (form.isConnected) {
       submitButton.disabled = false;
