@@ -518,6 +518,8 @@ button, input, select, textarea { font: inherit; }
   gap: 30px;
 }
 .footer h3, .footer h4 { color: white; }
+.footer-social-links a { display: inline-flex; align-items: center; gap: 0.35em; }
+.footer-social-icon { width: 1em; height: 1em; flex: none; }
 .footer ul {
   list-style: none;
   padding: 0;
