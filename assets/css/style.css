@@ -257,6 +257,7 @@ button, input, select, textarea { font: inherit; }
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
 }
+.button-with-icon,
 .hero-actions > a,
 .resource-actions > a {
   display: inline-flex;

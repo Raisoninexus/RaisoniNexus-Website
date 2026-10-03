@@ -30,39 +30,6 @@ function getBadgeColor(type) {
   return palette[type] || 'linear-gradient(135deg, #475569, #64748b)';
 }
 
-function createResourceActionIcon(action) {
-  const namespace = 'http://www.w3.org/2000/svg';
-  const icon = document.createElementNS(namespace, 'svg');
-  icon.setAttribute('class', 'button-icon');
-  icon.setAttribute('viewBox', '0 0 24 24');
-  icon.setAttribute('aria-hidden', 'true');
-  icon.setAttribute('focusable', 'false');
-
-  const path = document.createElementNS(namespace, 'path');
-  path.setAttribute('d', action === 'preview'
-    ? 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12'
-    : 'M12 3v12m0 0 5-5m-5 5-5-5M5 21h14');
-  path.setAttribute('fill', 'none');
-  path.setAttribute('stroke', 'currentColor');
-  path.setAttribute('stroke-width', '2');
-  path.setAttribute('stroke-linecap', 'round');
-  path.setAttribute('stroke-linejoin', 'round');
-  icon.appendChild(path);
-
-  if (action === 'preview') {
-    const pupil = document.createElementNS(namespace, 'circle');
-    pupil.setAttribute('cx', '12');
-    pupil.setAttribute('cy', '12');
-    pupil.setAttribute('r', '3');
-    pupil.setAttribute('fill', 'none');
-    pupil.setAttribute('stroke', 'currentColor');
-    pupil.setAttribute('stroke-width', '2');
-    icon.appendChild(pupil);
-  }
-
-  return icon;
-}
-
 function createResourceCard(item) {
   const card = document.createElement('article');
   card.className = 'resource-card magnetic reveal';
@@ -99,7 +66,7 @@ function createResourceCard(item) {
     preview.href = item.fileUrl;
     preview.target = '_blank';
     preview.rel = 'noopener noreferrer';
-    preview.append(createResourceActionIcon('preview'), document.createTextNode('Preview'));
+    preview.append(window.RNButtonIcons.create('preview'), document.createTextNode('Preview'));
     const download = document.createElement('a');
     download.className = 'primary-btn download-btn';
     const downloadUrl = new URL(item.fileUrl);
@@ -109,7 +76,7 @@ function createResourceCard(item) {
     download.href = downloadUrl.toString();
     download.download = fileName;
     download.dataset.resourceId = item.id;
-    download.append(createResourceActionIcon('download'), document.createTextNode('Download'));
+    download.append(window.RNButtonIcons.create('download'), document.createTextNode('Download'));
     actions.append(preview, download);
   } else {
     const unavailable = document.createElement('span');

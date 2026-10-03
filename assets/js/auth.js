@@ -36,9 +36,10 @@ async function renderAuthContent() {
         <div class="form-panel">
           <h2 id="studentWelcomeHeading">Welcome</h2>
           <p>Student session is active.</p>
-          <button class="secondary-btn" type="button" data-auth-action="logout">Logout</button>
+          <button class="secondary-btn" type="button" data-auth-action="logout" data-button-icon="logout">Logout</button>
         </div>
       `;
+      window.RNButtonIcons?.decorate(authPanel);
       const displayName = profile?.name || session.user?.email?.split('@')[0] || 'Student';
       document.getElementById('studentWelcomeHeading').textContent = `Welcome, ${displayName}`;
       return;
@@ -53,11 +54,12 @@ async function renderAuthContent() {
           <div class="form-grid">
             <div class="full"><label for="newPassword">New password</label><input class="input" id="newPassword" type="password" name="password" minlength="8" autocomplete="new-password" required /></div>
             <div class="full"><label for="confirmPassword">Confirm password</label><input class="input" id="confirmPassword" type="password" name="confirmPassword" minlength="8" autocomplete="new-password" required /></div>
-            <div class="full"><button class="primary-btn" type="submit">Update password</button></div>
+            <div class="full"><button class="primary-btn" type="submit" data-button-icon="password">Update password</button></div>
           </div>
         </form>
       </div>
     `;
+      window.RNButtonIcons?.decorate(authPanel);
     return;
   }
 
@@ -74,7 +76,7 @@ async function renderAuthContent() {
           ${studentAuthMode === 'signup' ? '<div class="full"><label for="studentFullName">Full name</label><input class="input" id="studentFullName" type="text" name="fullName" autocomplete="name" required /></div>' : ''}
           <div class="full"><label for="studentEmail">Email ID</label><input class="input" id="studentEmail" type="email" name="email" autocomplete="email" required /></div>
           <div class="full"><label for="studentPassword">Password</label><input class="input" id="studentPassword" type="password" name="password" minlength="8" autocomplete="${studentAuthMode === 'signup' ? 'new-password' : 'current-password'}" required /></div>
-          <div class="full"><button class="primary-btn" type="submit">${studentAuthMode === 'signup' ? 'Create account' : 'Login'}</button></div>
+          <div class="full"><button class="primary-btn" type="submit" data-button-icon="${studentAuthMode === 'signup' ? 'account' : 'login'}">${studentAuthMode === 'signup' ? 'Create account' : 'Login'}</button></div>
         </div>
       </form>
       <div class="auth-divider"><span>or</span></div>
@@ -83,11 +85,12 @@ async function renderAuthContent() {
         <span>${googleButtonLabel}</span>
       </button>
       <div class="auth-actions">
-        <button class="ghost-btn" type="button" data-auth-action="mode">${studentAuthMode === 'signup' ? 'Back to login' : 'Create student account'}</button>
-        ${studentAuthMode === 'login' ? '<button class="ghost-btn" type="button" data-auth-action="reset">Forgot password?</button>' : ''}
+        <button class="ghost-btn" type="button" data-auth-action="mode" data-button-icon="${studentAuthMode === 'signup' ? 'back' : 'account'}">${studentAuthMode === 'signup' ? 'Back to login' : 'Create student account'}</button>
+        ${studentAuthMode === 'login' ? '<button class="ghost-btn" type="button" data-auth-action="reset" data-button-icon="password">Forgot password?</button>' : ''}
       </div>
     </div>
   `;
+  window.RNButtonIcons?.decorate(authPanel);
 }
 
 function getSignupErrorMessage(error) {

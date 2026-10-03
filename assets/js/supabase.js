@@ -94,6 +94,8 @@ function updateStudentNav(session) {
     link.dataset.studentAuthLink = 'true';
     link.href = session ? 'profile.html' : 'login.html';
     link.textContent = session ? 'Profile' : 'Login';
+    link.dataset.buttonIcon = session ? 'profile' : 'login';
+    window.RNButtonIcons?.decorate(link);
   });
 }
 
