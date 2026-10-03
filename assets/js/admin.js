@@ -61,6 +61,14 @@ async function loadUploadOptions() {
   for (const selectConfig of selects) {
     const select = document.getElementById(selectConfig.id);
     if (!select) continue;
+    if (selectConfig.id === 'resourceBranch') {
+      select.multiple = true;
+      select.size = 4;
+      select.name = 'branch_ids';
+      select.setAttribute('aria-label', 'Select one or more branches');
+      const label = document.querySelector('label[for="resourceBranch"]');
+      if (label) label.textContent = 'Branches (select one or more)';
+    }
     select.replaceChildren(new Option(select.options[0]?.textContent || 'Choose option', ''));
     let query = client.from(selectConfig.table).select(selectConfig.columns);
     if (selectConfig.table === 'branches' || selectConfig.table === 'subjects') query = query.eq('is_active', true);
@@ -89,21 +97,25 @@ async function loadUploadOptions() {
 }
 
 let resourceSubjectRequestId = 0;
+let resourceSubjectMappings = new Map();
 
 async function loadResourceSubjects() {
   const select = document.getElementById('resourceSubject');
   if (!select) return;
 
   const requestId = ++resourceSubjectRequestId;
-  const branchId = document.getElementById('resourceBranch')?.value || '';
+  const branchIds = [...(document.getElementById('resourceBranch')?.selectedOptions || [])]
+    .map((option) => option.value)
+    .filter(Boolean);
   const semesterId = document.getElementById('resourceSemester')?.value || '';
-  select.replaceChildren(new Option(branchId && semesterId ? 'Loading subjects...' : 'Choose branch and semester first', ''));
+  resourceSubjectMappings = new Map();
+  select.replaceChildren(new Option(branchIds.length && semesterId ? 'Loading matching subjects...' : 'Choose branches and semester first', ''));
   select.disabled = true;
-  if (!branchId || !semesterId) return;
+  if (!branchIds.length || !semesterId) return;
 
   const { data, error } = await window.rnSupabaseClient.from('subjects')
-    .select('id, name, subject_code')
-    .eq('branch_id', branchId)
+    .select('id, name, subject_code, branch_id')
+    .in('branch_id', branchIds)
     .eq('semester_id', semesterId)
     .eq('is_active', true)
     .order('name');
@@ -112,16 +124,32 @@ async function loadResourceSubjects() {
   if (error) {
     console.error('Failed to load subjects for resource upload:', error.message);
     select.replaceChildren(new Option('Unable to load subjects', ''));
-    showToast('Unable to load subjects for that branch and semester.', 'error');
+    showToast('Unable to load subjects for those branches and semester.', 'error');
     return;
   }
 
-  select.replaceChildren(new Option(data.length ? 'Choose subject' : 'No subjects for this selection', ''));
+  const subjectsByKey = new Map();
   data.forEach((subject) => {
-    const label = subject.subject_code ? `${subject.name} (${subject.subject_code})` : subject.name;
-    select.add(new Option(label, subject.id));
+    const key = (subject.subject_code || subject.name).trim().toLowerCase();
+    if (!subjectsByKey.has(key)) subjectsByKey.set(key, { subject, byBranch: new Map() });
+    subjectsByKey.get(key).byBranch.set(subject.branch_id, subject);
   });
-  select.disabled = data.length === 0;
+  const matchingSubjects = [...subjectsByKey.entries()]
+    .filter(([, entry]) => branchIds.every((branchId) => entry.byBranch.has(branchId)));
+  matchingSubjects.forEach(([key, entry]) => {
+    resourceSubjectMappings.set(key, Object.fromEntries(entry.byBranch));
+  });
+  resourceSubjectMappings.set('__general__', Object.fromEntries(branchIds.map((branchId) => [branchId, { id: null }])));
+
+  select.replaceChildren(new Option('Choose a matching subject or general', ''));
+  matchingSubjects.forEach(([key, entry]) => {
+    const label = entry.subject.subject_code
+      ? `${entry.subject.name} (${entry.subject.subject_code})`
+      : entry.subject.name;
+    select.add(new Option(label, key));
+  });
+  select.add(new Option('General / no specific subject', '__general__'));
+  select.disabled = false;
 }
 
 async function loadTaxonomyTables() {
@@ -470,8 +498,14 @@ function bindResourceUpload() {
     const client = window.rnSupabaseClient;
     const formData = new FormData(form);
     const file = formData.get('file');
-    if (!formData.get('branch_id') || !formData.get('semester_id') || !formData.get('subject_id')) {
-      showToast('Choose a branch, semester, and matching subject first.', 'error');
+    const branchIds = [...document.getElementById('resourceBranch').selectedOptions]
+      .map((option) => option.value)
+      .filter(Boolean);
+    const subjectKey = String(formData.get('subject_id') || '');
+    const subjectByBranch = resourceSubjectMappings.get(subjectKey);
+    if (!branchIds.length || !formData.get('semester_id') || !subjectByBranch
+      || branchIds.some((branchId) => !subjectByBranch[branchId])) {
+      showToast('Choose branches, semester, and a subject available in every selected branch.', 'error');
       return;
     }
     if (!(file instanceof File) || !file.size) {
@@ -504,12 +538,12 @@ function bindResourceUpload() {
 
       const { data: fileData } = client.storage.from('resources').getPublicUrl(objectPath);
       const tags = String(formData.get('tags') || '').split(',').map((tag) => tag.trim()).filter(Boolean);
-      const { error: insertError } = await client.from('resources').insert({
+      const resources = branchIds.map((branchId) => ({
         title: String(formData.get('title')).trim(),
         description: String(formData.get('description') || '').trim(),
-        branch_id: formData.get('branch_id'),
+        branch_id: branchId,
         semester_id: formData.get('semester_id'),
-        subject_id: formData.get('subject_id'),
+        subject_id: subjectByBranch[branchId].id,
         resource_type: formData.get('resource_type'),
         academic_year: String(formData.get('academic_year') || '').trim() || null,
         file_url: fileData.publicUrl,
@@ -519,7 +553,8 @@ function bindResourceUpload() {
         tags,
         uploaded_by: session.user.id,
         status: formData.get('status')
-      });
+      }));
+      const { error: insertError } = await client.from('resources').insert(resources);
       if (insertError) throw insertError;
 
       showToast('Resource uploaded successfully.', 'success');
