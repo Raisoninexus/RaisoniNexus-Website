@@ -257,6 +257,13 @@ button, input, select, textarea { font: inherit; }
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
 }
+.hero-actions > a,
+.resource-actions > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.button-icon { width: 1em; height: 1em; flex: none; }
 .hero-meta {
   display: flex;
   gap: 22px;
