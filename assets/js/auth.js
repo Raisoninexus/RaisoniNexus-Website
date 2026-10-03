@@ -1,11 +1,17 @@
-const GOOGLE_LOGIN_ENABLED = false;
+const GOOGLE_LOGIN_ENABLED = true;
 let studentAuthMode = 'login';
 
-function getEmailConfirmationRedirect() {
+function getAuthHomeRedirect(welcomeType) {
   const localHosts = ['localhost', '127.0.0.1', '::1'];
   const isLocalOrigin = window.location.protocol === 'file:' || localHosts.includes(window.location.hostname);
   const origin = isLocalOrigin ? 'https://raisoninexus-website.vercel.app' : window.location.origin;
-  return new URL('/?welcome=created', origin).href;
+  const redirect = new URL('/', origin);
+  redirect.searchParams.set('welcome', welcomeType);
+  return redirect.href;
+}
+
+function getEmailConfirmationRedirect() {
+  return getAuthHomeRedirect('created');
 }
 
 async function renderAuthContent() {
@@ -243,7 +249,7 @@ async function signInWithGoogle(button) {
   button.disabled = true;
   button.innerText = 'Connecting to Google...';
   try {
-    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const redirectTo = getAuthHomeRedirect('login');
     const { data, error } = await client.auth.signInWithOAuth({
       provider: 'google',
       options: {
