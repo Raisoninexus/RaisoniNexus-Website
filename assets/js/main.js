@@ -1,5 +1,6 @@
 async function showStudentWelcome() {
-  if (new URLSearchParams(window.location.search).get('welcome') !== '1') return;
+  const welcomeType = new URLSearchParams(window.location.search).get('welcome');
+  if (welcomeType !== 'created' && welcomeType !== 'login') return;
 
   const session = await window.rnSupabaseUtils?.getCurrentUserSession();
   if (!session) return;
@@ -15,8 +16,11 @@ async function showStudentWelcome() {
   const welcomeMessage = document.createElement('p');
   welcomeMessage.className = 'student-welcome';
   welcomeMessage.setAttribute('role', 'status');
-  welcomeMessage.textContent = `Welcome, ${displayName}! You are signed in.`;
+  welcomeMessage.textContent = welcomeType === 'created'
+    ? `Welcome, ${displayName}! Your account is ready.`
+    : `Welcome back, ${displayName}!`;
   heroActions.before(welcomeMessage);
+  showToast(welcomeType === 'created' ? 'Your account was created successfully.' : `Welcome back, ${displayName}!`, 'success');
 
   const url = new URL(window.location.href);
   url.searchParams.delete('welcome');

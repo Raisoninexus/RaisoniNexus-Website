@@ -5,7 +5,7 @@ function getEmailConfirmationRedirect() {
   const localHosts = ['localhost', '127.0.0.1', '::1'];
   const isLocalOrigin = window.location.protocol === 'file:' || localHosts.includes(window.location.hostname);
   const origin = isLocalOrigin ? 'https://raisoninexus-website.vercel.app' : window.location.origin;
-  return new URL('/?welcome=1', origin).href;
+  return new URL('/?welcome=created', origin).href;
 }
 
 async function renderAuthContent() {
@@ -173,7 +173,7 @@ async function handleStudentAuth(event) {
         return;
       }
       showToast('Account created successfully.', 'success');
-      window.location.assign('index.html?welcome=1');
+      window.location.assign('index.html?welcome=created');
       return;
     }
 
@@ -192,7 +192,7 @@ async function handleStudentAuth(event) {
       window.location.href = 'admin/dashboard.html';
       return;
     }
-    window.location.assign('index.html?welcome=1');
+    window.location.assign('index.html?welcome=login');
     return;
   } catch (error) {
     if (studentAuthMode === 'signup') {
