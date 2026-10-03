@@ -49,6 +49,56 @@ async function requireAdminAccess() {
   return true;
 }
 
+function renderResourceBranchCheckboxes(select) {
+  let container = document.getElementById('resourceBranchOptions');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'resourceBranchOptions';
+    container.className = 'resource-branch-picker';
+    container.setAttribute('role', 'group');
+    container.setAttribute('aria-labelledby', 'resourceBranchLabel');
+    select.after(container);
+  }
+
+  container.replaceChildren();
+  const options = document.createElement('div');
+  options.className = 'resource-branch-options';
+  const count = document.createElement('p');
+  count.className = 'resource-branch-count';
+  count.setAttribute('aria-live', 'polite');
+
+  const updateCount = () => {
+    const selectedCount = [...select.selectedOptions].filter((option) => option.value).length;
+    count.textContent = `${selectedCount} ${selectedCount === 1 ? 'branch' : 'branches'} selected`;
+  };
+
+  [...select.options].filter((option) => option.value).forEach((option) => {
+    const label = document.createElement('label');
+    label.className = 'resource-branch-option';
+    label.classList.toggle('is-selected', option.selected);
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = option.value;
+    checkbox.checked = option.selected;
+    checkbox.setAttribute('aria-label', option.textContent);
+    const name = document.createElement('span');
+    name.textContent = option.textContent;
+    checkbox.addEventListener('change', () => {
+      option.selected = checkbox.checked;
+      label.classList.toggle('is-selected', checkbox.checked);
+      const placeholder = [...select.options].find((item) => !item.value);
+      if (placeholder) placeholder.selected = false;
+      updateCount();
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    label.append(checkbox, name);
+    options.appendChild(label);
+  });
+
+  container.append(options, count);
+  updateCount();
+}
+
 async function loadUploadOptions() {
   const client = window.rnSupabaseClient;
   const selects = [
@@ -63,11 +113,17 @@ async function loadUploadOptions() {
     if (!select) continue;
     if (selectConfig.id === 'resourceBranch') {
       select.multiple = true;
-      select.size = 4;
       select.name = 'branch_ids';
+      select.required = false;
+      select.classList.add('resource-branch-source');
       select.setAttribute('aria-label', 'Select one or more branches');
       const label = document.querySelector('label[for="resourceBranch"]');
-      if (label) label.textContent = 'Branches (select one or more)';
+      if (label) {
+        label.id = 'resourceBranchLabel';
+        label.removeAttribute('for');
+        label.textContent = 'Branches';
+      }
+      select.parentElement?.classList.add('full');
     }
     select.replaceChildren(new Option(select.options[0]?.textContent || 'Choose option', ''));
     let query = client.from(selectConfig.table).select(selectConfig.columns);
@@ -86,7 +142,9 @@ async function loadUploadOptions() {
       select.appendChild(option);
     });
     if (selectConfig.id === 'resourceBranch') {
-      select.value = new URLSearchParams(window.location.search).get('branch') || '';
+      const branchId = new URLSearchParams(window.location.search).get('branch') || '';
+      select.value = branchId;
+      renderResourceBranchCheckboxes(select);
     }
     if (selectConfig.id === 'resourceSemester') {
       select.value = new URLSearchParams(window.location.search).get('semester') || '';
@@ -559,6 +617,7 @@ function bindResourceUpload() {
 
       showToast('Resource uploaded successfully.', 'success');
       form.reset();
+      renderResourceBranchCheckboxes(document.getElementById('resourceBranch'));
       loadResourceSubjects();
     } catch (error) {
       if (objectPath) await client.storage.from('resources').remove([objectPath]);

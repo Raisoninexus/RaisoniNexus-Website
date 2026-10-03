@@ -442,6 +442,45 @@ tbody td {
 .admin-login-body > main.section { display: grid; min-height: 100vh; align-items: center; padding: 36px 0; }
 .admin-login-body .form-panel { border-top: 4px solid #0b8b77; }
 
+.resource-branch-source { display: none; }
+.resource-branch-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 2px;
+}
+.resource-branch-option {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(33,74,67,0.16);
+  border-radius: 8px;
+  padding: 8px 11px;
+  background: #fff;
+  color: #314c52;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+.resource-branch-option:hover,
+.resource-branch-option.is-selected {
+  border-color: #0b8b77;
+  background: #eff8f5;
+}
+.resource-branch-option input {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  accent-color: #087f70;
+}
+.resource-branch-option input:focus-visible {
+  outline: 3px solid rgba(11,139,119,0.25);
+  outline-offset: 2px;
+}
+.resource-branch-count { margin: 8px 2px 0; color: #60777c; font-size: 0.82rem; }
+
 @media (max-width: 640px) {
   .admin-body .admin-panel,
   .admin-body .form-panel { padding: 16px; }
