@@ -1192,7 +1192,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   const sidebar = document.querySelector('.admin-sidebar');
   const toggle = document.querySelector('.admin-sidebar-toggle');
   if (sidebar && toggle) {
-    toggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+    if (!sidebar.id) sidebar.id = 'admin-sidebar-navigation';
+    toggle.setAttribute('aria-controls', sidebar.id);
+
+    const mobileViewport = window.matchMedia('(max-width: 980px)');
+    const main = sidebar.parentElement.querySelector('.admin-main');
+    const backdrop = document.createElement('button');
+    backdrop.className = 'admin-sidebar-backdrop';
+    backdrop.type = 'button';
+    backdrop.setAttribute('aria-label', 'Close navigation menu');
+    sidebar.insertAdjacentElement('afterend', backdrop);
+
+    const setSidebarOpen = (open) => {
+      const wasOpen = sidebar.classList.contains('open');
+      const isOpen = mobileViewport.matches && open;
+      sidebar.classList.toggle('open', isOpen);
+      sidebar.setAttribute('aria-hidden', String(mobileViewport.matches && !isOpen));
+      sidebar.inert = mobileViewport.matches && !isOpen;
+      if (main) main.inert = isOpen;
+      toggle.setAttribute('aria-expanded', String(isOpen));
+      if (isOpen && !wasOpen) sidebar.querySelector('.admin-nav a')?.focus();
+    };
+
+    const closeSidebar = () => {
+      if (mobileViewport.matches && sidebar.classList.contains('open')) {
+        setSidebarOpen(false);
+        toggle.focus();
+      }
+    };
+
+    setSidebarOpen(false);
+    toggle.addEventListener('click', () => {
+      setSidebarOpen(!sidebar.classList.contains('open'));
+    });
+    backdrop.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeSidebar));
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeSidebar();
+    });
+    mobileViewport.addEventListener('change', () => setSidebarOpen(false));
   }
 
   document.querySelectorAll('.table-action').forEach((action) => {
