@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://example.com/</loc></url>
-  <url><loc>https://example.com/branches.html</loc></url>
-  <url><loc>https://example.com/resources.html</loc></url>
-  <url><loc>https://example.com/notes.html</loc></url>
-  <url><loc>https://example.com/pyq.html</loc></url>
-  <url><loc>https://example.com/question-bank.html</loc></url>
-  <url><loc>https://example.com/about.html</loc></url>
-  <url><loc>https://example.com/contact.html</loc></url>
-  <url><loc>https://example.com/login.html</loc></url>
+  <url><loc>https://raisoninexus-website.vercel.app/</loc></url>
+  <url><loc>https://raisoninexus-website.vercel.app/branches.html</loc></url>
+  <url><loc>https://raisoninexus-website.vercel.app/resources.html</loc></url>
+  <url><loc>https://raisoninexus-website.vercel.app/notes.html</loc></url>
+  <url><loc>https://raisoninexus-website.vercel.app/pyq.html</loc></url>
+  <url><loc>https://raisoninexus-website.vercel.app/question-bank.html</loc></url>
+  <url><loc>https://raisoninexus-website.vercel.app/about.html</loc></url>
+  <url><loc>https://raisoninexus-website.vercel.app/contact.html</loc></url>
+  <url><loc>https://raisoninexus-website.vercel.app/login.html</loc></url>
 </urlset>
