@@ -594,7 +594,6 @@ function bindResourceUpload() {
       });
       if (uploadError) throw uploadError;
 
-      const { data: fileData } = client.storage.from('resources').getPublicUrl(objectPath);
       const tags = String(formData.get('tags') || '').split(',').map((tag) => tag.trim()).filter(Boolean);
       const resources = branchIds.map((branchId) => ({
         title: String(formData.get('title')).trim(),
@@ -604,7 +603,7 @@ function bindResourceUpload() {
         subject_id: subjectByBranch[branchId].id,
         resource_type: formData.get('resource_type'),
         academic_year: String(formData.get('academic_year') || '').trim() || null,
-        file_url: fileData.publicUrl,
+        file_url: objectPath,
         file_name: file.name,
         file_type: file.name.split('.').pop()?.toUpperCase() || 'FILE',
         file_size: file.size,
@@ -672,12 +671,25 @@ async function loadAdminResources() {
     const actions = document.createElement('td');
     actions.className = 'admin-actions';
     if (resource.file_url) {
-      const view = document.createElement('a');
+      const view = document.createElement('button');
+      view.type = 'button';
       view.className = 'ghost-btn';
-      view.href = resource.file_url;
-      view.target = '_blank';
-      view.rel = 'noopener noreferrer';
       view.textContent = 'View';
+      view.addEventListener('click', async () => {
+        try {
+          const { data, error } = await window.rnSupabaseClient.functions.invoke('download-resource', {
+            body: {
+              resource_id: resource.id,
+              resourceId: resource.id
+            }
+          });
+          if (error || !data?.url) throw error || new Error('Unable to open this resource.');
+          window.open(data.url, '_blank', 'noopener,noreferrer');
+        } catch (viewError) {
+          console.error('Resource view failed:', viewError);
+          showToast(viewError?.message || 'Unable to open this resource.', 'error');
+        }
+      });
       actions.appendChild(view);
     }
     const statusButton = document.createElement('button');

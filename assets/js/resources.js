@@ -62,20 +62,21 @@ function createResourceCard(item) {
   actions.className = 'resource-actions';
   if (item.fileUrl) {
     const preview = document.createElement('a');
-    preview.className = 'ghost-btn action-btn';
-    preview.href = item.fileUrl;
-    preview.target = '_blank';
-    preview.rel = 'noopener noreferrer';
+    preview.className = 'ghost-btn action-btn resource-preview-btn';
+    preview.href = '#';
+    preview.dataset.resourceId = item.id;
+    preview.dataset.resourceTitle = item.title;
+    preview.dataset.resourceFileName = item.fileName || '';
     preview.append(window.RNButtonIcons.create('preview'), document.createTextNode('Preview'));
     const download = document.createElement('a');
     download.className = 'primary-btn download-btn';
-    const downloadUrl = new URL(item.fileUrl);
     const extension = item.fileType.toLowerCase() === 'file' ? 'pdf' : item.fileType.toLowerCase();
     const fileName = item.fileName || `${item.title}.${extension}`;
-    downloadUrl.searchParams.set('download', fileName);
-    download.href = downloadUrl.toString();
+    download.href = '#';
     download.download = fileName;
     download.dataset.resourceId = item.id;
+    download.dataset.resourceTitle = item.title;
+    download.dataset.resourceFileName = fileName;
     download.append(window.RNButtonIcons.create('download'), document.createTextNode('Download'));
     actions.append(preview, download);
   } else {
@@ -95,6 +96,65 @@ function createResourceCard(item) {
   meta.append(subject, downloads);
   card.append(header, title, description, chips, actions, meta);
   return card;
+}
+
+function getSignedDownloadUrl(resource) {
+  const client = window.rnSupabaseClient;
+  if (!client || !resource?.id) {
+    return Promise.reject(new Error('Sign in to access this study material.'));
+  }
+  return client.functions.invoke('download-resource', {
+    body: {
+      resource_id: resource.id,
+      resourceId: resource.id
+    }
+  }).then(({ data, error }) => {
+    if (error) throw error;
+    if (!data?.url) throw new Error('This resource is not available for download.');
+    return data.url;
+  });
+}
+
+async function triggerResourcePreview(resource) {
+  if (!resource) {
+    showToast('The requested resource is unavailable.', 'error');
+    return;
+  }
+
+  try {
+    const previewUrl = await getSignedDownloadUrl(resource);
+    window.location.assign(previewUrl);
+  } catch (error) {
+    console.error('Protected resource preview failed:', error);
+    showToast(error?.message || 'The resource preview could not be opened.', 'error');
+  }
+}
+
+async function triggerResourceDownload(resource) {
+  if (!resource) {
+    showToast('The requested resource is unavailable.', 'error');
+    return;
+  }
+
+  try {
+    const finalUrl = await getSignedDownloadUrl(resource);
+    if (!finalUrl || finalUrl === '#') {
+      throw new Error('This resource is not available for download.');
+    }
+
+    const anchor = document.createElement('a');
+    anchor.href = finalUrl;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    anchor.download = resource.fileName || `${resource.title}.pdf`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    showToast('Download started.', 'success');
+  } catch (error) {
+    console.error('Protected download failed:', error);
+    showToast(error?.message || 'The resource could not be downloaded.', 'error');
+  }
 }
 
 function renderResourceCards(containerSelector, items = []) {
@@ -138,38 +198,57 @@ function filterResourceList() {
   const branchId = document.getElementById('resourceBranchFilter')?.value || params.get('branch') || '';
   const semesterId = document.getElementById('resourceSemesterFilter')?.value || params.get('semester') || '';
   const resourceType = params.get('type') || '';
+  const pageName = window.location.pathname.split('/').pop().replace(/\.html$/i, '');
+  const pageResourceTypes = {
+    notes: 'Notes',
+    pyq: 'PYQ',
+    'question-bank': 'Question Bank',
+    assignments: 'Assignment',
+    'lab-manuals': 'Lab Manual',
+    syllabus: 'Syllabus'
+  };
+  const expectedType = pageResourceTypes[pageName];
+  const subjectIdentifier = pageName === 'subject' ? params.get('id') || '' : '';
+  const subjectSlug = subjectIdentifier.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const filtered = (window.rnResources || []).filter((item) => {
     const text = `${item.title} ${item.description} ${item.subject} ${item.type} ${item.branch} ${item.semester}`.toLowerCase();
     return (!query || text.includes(query))
       && (!branchId || item.branchId === branchId)
       && (!semesterId || item.semesterId === semesterId)
-      && (!resourceType || item.type.toLowerCase() === resourceType.toLowerCase());
+      && (!resourceType || item.type.toLowerCase() === resourceType.toLowerCase())
+      && (!expectedType || item.type.toLowerCase() === expectedType.toLowerCase())
+      && (!subjectIdentifier || item.subjectId === subjectIdentifier
+        || (item.subjectId && item.subject.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') === subjectSlug));
   });
   renderResourceCards('.resource-list:not(#searchResults)', filtered);
 }
 
-function notifyResourcesLoaded(errorMessage = '', taxonomy = { branches: [], semesters: [] }) {
+function notifyResourcesLoaded(errorMessage = '', taxonomy = { branches: [], semesters: [], subjects: [] }) {
   window.rnResourceError = errorMessage;
   window.dispatchEvent(new CustomEvent('rn-resources-loaded', {
     detail: {
       items: window.rnResources || [],
       branches: taxonomy.branches,
       semesters: taxonomy.semesters,
+      subjects: taxonomy.subjects,
       error: errorMessage
     }
   }));
 }
 
 async function loadResourceTaxonomy(client) {
-  const [branchResult, semesterResult] = await Promise.all([
+  const [branchResult, semesterResult, subjectResult] = await Promise.all([
     client.from('branches').select('id, name').eq('is_active', true).order('name'),
-    client.from('semesters').select('id, name, number').order('number')
+    client.from('semesters').select('id, name, number').order('number'),
+    client.from('subjects').select('id, name, branch_id, semester_id').eq('is_active', true).order('name')
   ]);
   if (branchResult.error) console.error('Branch filter fetch failed:', branchResult.error.message);
   if (semesterResult.error) console.error('Semester filter fetch failed:', semesterResult.error.message);
+  if (subjectResult.error) console.error('Subject filter fetch failed:', subjectResult.error.message);
   return {
     branches: branchResult.data || [],
-    semesters: semesterResult.data || []
+    semesters: semesterResult.data || [],
+    subjects: subjectResult.data || []
   };
 }
 
@@ -188,7 +267,7 @@ async function loadResources() {
 
   const { data, error } = await client
     .from('resources')
-    .select('id, title, description, branch_id, semester_id, resource_type, file_url, file_name, file_type, download_count, created_at, branches(name), semesters(name), subjects(name)')
+    .select('id, title, description, branch_id, semester_id, subject_id, resource_type, file_url, file_name, file_type, download_count, created_at, branches(name), semesters(name), subjects(name)')
     .eq('status', 'published')
     .order('created_at', { ascending: false });
 
@@ -203,24 +282,6 @@ async function loadResources() {
   }
 
   window.rnResources = (data || []).map(mapSupabaseResource);
-  const pageResourceTypes = {
-    '/notes.html': 'Notes',
-    '/pyq.html': 'PYQ',
-    '/question-bank.html': 'Question Bank',
-    '/assignments.html': 'Assignment',
-    '/lab-manuals.html': 'Lab Manual',
-    '/syllabus.html': 'Syllabus'
-  };
-  const expectedType = pageResourceTypes[window.location.pathname];
-  let pageItems = expectedType
-    ? window.rnResources.filter((item) => item.type.toLowerCase() === expectedType.toLowerCase())
-    : window.rnResources;
-  if (window.location.pathname.endsWith('/subject.html')) {
-    const subjectIdentifier = new URLSearchParams(window.location.search).get('id') || '';
-    const subjectSlug = subjectIdentifier.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    pageItems = pageItems.filter((item) => item.subjectId === subjectIdentifier
-      || item.subject.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') === subjectSlug);
-  }
 
   populateResourceFilters(window.rnResources, taxonomy);
   const params = new URLSearchParams(window.location.search);
@@ -228,23 +289,66 @@ async function loadResources() {
   const semesterFilter = document.getElementById('resourceSemesterFilter');
   if (branchFilter && params.has('branch')) branchFilter.value = params.get('branch');
   if (semesterFilter && params.has('semester')) semesterFilter.value = params.get('semester');
-  renderResourceCards('.resource-list', pageItems);
-  if (document.getElementById('resourceSearch') || document.getElementById('resourceBranchFilter')) {
-    filterResourceList();
-  }
+  filterResourceList();
   notifyResourcesLoaded('', taxonomy);
+
+  const pendingAction = params.get('resource_action');
+  const pendingResourceId = params.get('resource_id');
+  if (pendingAction && pendingResourceId) {
+    params.delete('resource_action');
+    params.delete('resource_id');
+    const cleanedUrl = new URL(window.location.href);
+    cleanedUrl.search = params.toString();
+    window.history.replaceState({}, '', cleanedUrl);
+
+    const pendingResource = window.rnResources.find((item) => item.id === pendingResourceId);
+    if (!pendingResource) {
+      showToast('The requested resource is unavailable.', 'error');
+    } else if (pendingAction === 'preview') {
+      await triggerResourcePreview(pendingResource);
+    } else if (pendingAction === 'download') {
+      await triggerResourceDownload(pendingResource);
+    }
+  }
 }
 
 document.addEventListener('click', async (event) => {
-  const link = event.target instanceof Element ? event.target.closest('.download-btn[data-resource-id]') : null;
-  if (!link || !window.rnSupabaseClient) return;
-  const session = await window.rnSupabaseUtils.getCurrentUserSession();
-  if (!session) return;
-  const { error } = await window.rnSupabaseClient.from('downloads').insert({
-    user_id: session.user.id,
-    resource_id: link.dataset.resourceId
-  });
-  if (error) console.error('Download tracking failed:', error.message);
+  const link = event.target instanceof Element
+    ? event.target.closest('.download-btn[data-resource-id], .resource-preview-btn[data-resource-id]')
+    : null;
+  if (!link) return;
+
+  event.preventDefault();
+  const requestedAction = link.classList.contains('resource-preview-btn') ? 'preview' : 'download';
+  const resourceId = link.dataset.resourceId;
+  const resource = (window.rnResources || []).find((item) => item.id === resourceId) || {
+    id: resourceId,
+    title: link.dataset.resourceTitle || 'Resource',
+    fileName: link.dataset.resourceFileName || '',
+    fileType: 'PDF'
+  };
+
+  if (!window.rnSupabaseClient) {
+    showToast('Resource access is unavailable until Supabase is configured.', 'error');
+    return;
+  }
+
+  const { data: { session } = {} } = await window.rnSupabaseClient.auth.getSession();
+  if (!session) {
+    const returnUrl = new URL(window.location.href);
+    returnUrl.searchParams.set('resource_action', requestedAction);
+    returnUrl.searchParams.set('resource_id', resource.id);
+    const loginUrl = new URL('/login.html', window.location.origin);
+    loginUrl.searchParams.set('next', `${returnUrl.pathname}${returnUrl.search}${returnUrl.hash}`);
+    window.location.assign(loginUrl.href);
+    return;
+  }
+
+  if (requestedAction === 'preview') {
+    await triggerResourcePreview(resource);
+  } else {
+    await triggerResourceDownload(resource);
+  }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
