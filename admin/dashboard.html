@@ -1,56 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Admin Dashboard | Raisoni Nexus</title><link rel="stylesheet" href="../assets/css/style.css" /><link rel="stylesheet" href="../assets/css/admin.css" /><link rel="stylesheet" href="../assets/css/themes.css" /><link rel="stylesheet" href="../assets/css/responsive.css" /></head>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3f7f6" />
+    <title>Admin Dashboard | Raisoni Nexus</title>
+    <link rel="stylesheet" href="../assets/css/style.css" />
+    <link rel="stylesheet" href="../assets/css/admin.css" />
+    <link rel="stylesheet" href="../assets/css/themes.css" />
+    <link rel="stylesheet" href="../assets/css/responsive.css" />
+  </head>
   <body class="admin-body admin-dashboard-body">
     <div class="admin-shell">
       <aside class="admin-sidebar open">
-        <div class="admin-brand"><span class="brand-mark">RN</span><strong>Raisoni Nexus</strong></div>
+        <div class="admin-brand">
+          <span class="brand-mark">RN</span>
+          <span class="admin-brand-copy"><strong>Raisoni Nexus</strong><small>ADMIN WORKSPACE</small></span>
+        </div>
         <nav class="admin-nav">
-          <a class="active" href="dashboard.html">Dashboard</a>
-          <a href="resources.html">Resources</a>
-          <a href="upload.html">Upload Resource</a>
-          <a href="branches.html">Branches</a>
-          <a href="semesters.html">Semesters</a>
-          <a href="subjects.html">Subjects</a>
-          <a href="users.html">Users</a>
-          <a href="notices.html">Notices</a>
-          <a href="analytics.html">Analytics</a>
-          <a href="settings.html">Settings</a>
-          <a href="login.html">Logout</a>
+          <span class="admin-nav-label">WORKSPACE</span>
+          <a class="active" href="dashboard.html"><span aria-hidden="true">🏠</span>Dashboard</a>
+          <a href="analytics.html"><span aria-hidden="true">📈</span>Analytics</a>
+          <span class="admin-nav-label">ACADEMIC CONTENT</span>
+          <a href="resources.html"><span aria-hidden="true">📚</span>Resources</a>
+          <a href="upload.html"><span aria-hidden="true">⬆️</span>Upload resource</a>
+          <a href="branches.html"><span aria-hidden="true">🏛️</span>Branches</a>
+          <a href="semesters.html"><span aria-hidden="true">🗓️</span>Semesters</a>
+          <a href="subjects.html"><span aria-hidden="true">🧩</span>Subjects</a>
+          <span class="admin-nav-label">COMMUNITY</span>
+          <a href="users.html"><span aria-hidden="true">👥</span>Students</a>
+          <a href="notices.html"><span aria-hidden="true">📣</span>Notices</a>
+          <a href="settings.html"><span aria-hidden="true">⚙️</span>Settings</a>
+          <a class="admin-nav-logout" href="login.html"><span aria-hidden="true">↪</span>Log out</a>
         </nav>
+        <div class="admin-sidebar-note"><span aria-hidden="true">✨</span><span><strong>Keep learning moving</strong><small>Your campus resource hub</small></span></div>
       </aside>
       <main class="admin-main dashboard-main">
         <div class="admin-topbar dashboard-topbar">
           <div class="dashboard-heading-wrap">
-            <button class="primary-btn admin-sidebar-toggle">☰ Menu</button>
+            <button class="primary-btn admin-sidebar-toggle" type="button" aria-label="Open navigation">☰ <span>Menu</span></button>
             <div class="dashboard-heading">
-              <span class="dashboard-eyebrow">RAISONI NEXUS / OPERATIONS</span>
-              <h1>Admin dashboard</h1>
-              <p>Manage academic content and keep student resources up to date.</p>
+              <span class="dashboard-eyebrow">RAISONI NEXUS <span aria-hidden="true">/</span> OPERATIONS</span>
+              <h1>Good to see you <span aria-hidden="true">👋</span></h1>
+              <p>Your academic workspace, all in one place.</p>
             </div>
           </div>
-          <a class="dashboard-header-link" href="upload.html">Upload a resource <span aria-hidden="true">↗</span></a>
+          <div class="dashboard-header-actions">
+            <button class="dashboard-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark mode" title="Toggle color theme">🌙</button>
+            <a class="dashboard-header-link" href="upload.html"><span aria-hidden="true">＋</span> Upload resource</a>
+          </div>
         </div>
 
+        <div id="dashboardAlerts" class="dashboard-alerts" role="alert" aria-live="assertive" hidden></div>
+
+        <section class="dashboard-welcome-card" aria-label="Dashboard introduction">
+          <div class="dashboard-welcome-copy">
+            <span class="dashboard-welcome-kicker"><span aria-hidden="true">✦</span> YOUR CAMPUS, ORGANIZED</span>
+            <h2>Make room for what matters.</h2>
+            <p>Stay on top of study resources, student requests, and the details that keep learning moving.</p>
+          </div>
+          <div class="dashboard-welcome-art" aria-hidden="true"><span>🎓</span><i>✦</i><b>✳</b></div>
+        </section>
+
         <div class="admin-card-grid dashboard-metrics">
-          <div class="admin-stat dashboard-stat"><span>Total resources</span><strong data-admin-count>--</strong><small>In the resource library</small></div>
-          <div class="admin-stat dashboard-stat"><span>Total downloads</span><strong data-admin-count>--</strong><small>Recorded by students</small></div>
-          <div class="admin-stat dashboard-stat"><span>Total students</span><strong data-admin-count>--</strong><small>Registered profiles</small></div>
-          <div class="admin-stat dashboard-stat"><span>Active branches</span><strong data-admin-count>--</strong><small>Academic programs</small></div>
-          <div class="admin-stat dashboard-stat"><span>Active subjects</span><strong data-admin-count>--</strong><small>Across all semesters</small></div>
+          <div class="admin-stat dashboard-stat"><div class="dashboard-stat-heading"><span class="dashboard-stat-icon" aria-hidden="true">📚</span><span>Total resources</span></div><strong data-admin-count>--</strong><small>In the resource library</small></div>
+          <div class="admin-stat dashboard-stat"><div class="dashboard-stat-heading"><span class="dashboard-stat-icon" aria-hidden="true">⬇️</span><span>Total downloads</span></div><strong data-admin-count>--</strong><small>Recorded by students</small></div>
+          <div class="admin-stat dashboard-stat"><div class="dashboard-stat-heading"><span class="dashboard-stat-icon" aria-hidden="true">👥</span><span>Total students</span></div><strong data-admin-count>--</strong><small>Registered profiles</small></div>
+          <div class="admin-stat dashboard-stat"><div class="dashboard-stat-heading"><span class="dashboard-stat-icon" aria-hidden="true">🏛️</span><span>Active branches</span></div><strong data-admin-count>--</strong><small>Academic programs</small></div>
+          <div class="admin-stat dashboard-stat"><div class="dashboard-stat-heading"><span class="dashboard-stat-icon" aria-hidden="true">🧩</span><span>Active subjects</span></div><strong data-admin-count>--</strong><small>Across all semesters</small></div>
         </div>
 
         <div class="dashboard-content-grid">
           <section class="admin-panel dashboard-panel reveal">
-            <div class="dashboard-panel-heading"><div><span class="dashboard-eyebrow">CONTENT</span><h2>Recent uploads</h2></div><a href="resources.html">View all <span aria-hidden="true">→</span></a></div>
+            <div class="dashboard-panel-heading"><div class="dashboard-panel-title"><span class="dashboard-panel-icon" aria-hidden="true">🗂️</span><div><span class="dashboard-eyebrow">CONTENT LIBRARY</span><h2>Recent uploads</h2></div></div><a href="resources.html">View all <span aria-hidden="true">→</span></a></div>
             <div id="recentUploads" class="list-stack" aria-live="polite"></div>
           </section>
           <section class="admin-panel dashboard-panel reveal">
-            <div class="dashboard-panel-heading"><div><span class="dashboard-eyebrow">INBOX</span><h2>Material requests <span id="materialRequestCount" class="status-badge status-draft">0 new</span></h2></div><button class="secondary-btn" type="button" id="refreshMaterialRequests">Refresh</button></div>
+            <div class="dashboard-panel-heading"><div class="dashboard-panel-title"><span class="dashboard-panel-icon dashboard-panel-icon-warm" aria-hidden="true">💬</span><div><span class="dashboard-eyebrow">STUDENT INBOX</span><h2>Material requests <span id="materialRequestCount" class="status-badge status-draft">0 new</span></h2></div></div><button class="secondary-btn dashboard-refresh-button" type="button" id="refreshMaterialRequests"><span aria-hidden="true">↻</span> Refresh</button></div>
             <div id="materialRequests" class="list-stack" aria-live="polite">Loading requests...</div>
           </section>
           <section class="admin-panel dashboard-panel dashboard-actions-panel reveal">
-            <div class="dashboard-panel-heading"><div><span class="dashboard-eyebrow">SHORTCUTS</span><h2>Common tasks</h2></div></div>
+            <div class="dashboard-panel-heading"><div class="dashboard-panel-title"><span class="dashboard-panel-icon dashboard-panel-icon-purple" aria-hidden="true">⚡</span><div><span class="dashboard-eyebrow">QUICK ACTIONS</span><h2>What would you like to do?</h2></div></div></div>
             <div class="dashboard-action-list">
               <a href="upload.html"><span class="dashboard-action-icon icon-upload" aria-hidden="true">↑</span><span><strong>Upload resource</strong><small>Add notes, PYQs, or course material</small></span><span class="dashboard-action-arrow" aria-hidden="true">→</span></a>
               <a href="users.html"><span class="dashboard-action-icon icon-students" aria-hidden="true">◎</span><span><strong>Manage students</strong><small>Search and update student profiles</small></span><span class="dashboard-action-arrow" aria-hidden="true">→</span></a>

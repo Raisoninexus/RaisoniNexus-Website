@@ -1,13 +1,40 @@
+function showDashboardError(area, error) {
+  const container = document.getElementById('dashboardAlerts');
+  if (!container) return;
+
+  container.hidden = false;
+  const message = error?.message || 'Unknown error';
+  let issue = [...container.querySelectorAll('[data-dashboard-error]')]
+    .find((element) => element.dataset.dashboardError === area);
+  if (!issue) {
+    issue = document.createElement('p');
+    issue.dataset.dashboardError = area;
+    container.insertBefore(issue, container.querySelector('button'));
+  }
+  issue.textContent = `${area}: ${message}`;
+
+  if (!container.querySelector('[data-dashboard-retry]')) {
+    const retry = document.createElement('button');
+    retry.className = 'secondary-btn';
+    retry.type = 'button';
+    retry.dataset.dashboardRetry = 'true';
+    retry.textContent = 'Reload dashboard data';
+    retry.addEventListener('click', () => window.location.reload());
+    container.appendChild(retry);
+  }
+}
+
 async function loadAdminMetrics() {
   const adminCards = document.querySelectorAll('[data-admin-count]');
   if (!adminCards.length) return;
 
+  const metricNames = ['Total resources', 'Total downloads', 'Total students', 'Active branches', 'Active subjects'];
   const queries = [
     window.rnSupabaseClient.from('resources').select('*', { count: 'exact', head: true }),
     window.rnSupabaseClient.from('downloads').select('*', { count: 'exact', head: true }),
     window.rnSupabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
-    window.rnSupabaseClient.from('branches').select('*', { count: 'exact', head: true }),
-    window.rnSupabaseClient.from('subjects').select('*', { count: 'exact', head: true })
+    window.rnSupabaseClient.from('branches').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    window.rnSupabaseClient.from('subjects').select('*', { count: 'exact', head: true }).eq('is_active', true)
   ];
   const results = await Promise.all(queries);
 
@@ -16,10 +43,13 @@ async function loadAdminMetrics() {
     if (!item) return;
     if (result.error) {
       console.error('Admin metric fetch failed:', result.error.message);
-      item.textContent = '--';
+      item.textContent = 'Unavailable';
+      item.title = result.error.message;
+      showDashboardError(metricNames[index], result.error);
       return;
     }
     item.textContent = result.count ?? 0;
+    item.removeAttribute('title');
   });
 }
 
@@ -995,6 +1025,7 @@ async function loadRecentUploads() {
   if (error) {
     container.textContent = 'Unable to load recent uploads.';
     console.error('Recent upload fetch failed:', error.message);
+    showDashboardError('Recent uploads', error);
     return;
   }
   container.replaceChildren();
@@ -1023,11 +1054,17 @@ async function loadMaterialRequests() {
   const container = document.getElementById('materialRequests');
   if (!container) return;
   const count = document.getElementById('materialRequestCount');
-  const { data, error } = await window.rnSupabaseClient
-    .from('material_requests')
-    .select('id, requester_name, requester_email, requested_material, details, status, created_at')
-    .order('created_at', { ascending: false })
-    .limit(50);
+  const [{ data, error, count: totalCount }, { count: newCount, error: countError }] = await Promise.all([
+    window.rnSupabaseClient
+      .from('material_requests')
+      .select('id, requester_name, requester_email, requested_material, details, status, created_at', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .limit(50),
+    window.rnSupabaseClient
+      .from('material_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'new')
+  ]);
 
   if (error) {
     console.error('Material request inbox failed:', { code: error.code, status: error.status });
@@ -1035,16 +1072,29 @@ async function loadMaterialRequests() {
       ? 'Apply the updated database schema and security policies to enable the request inbox.'
       : 'Unable to load material requests.';
     if (count) count.textContent = '--';
+    showDashboardError('Material requests', error);
     return;
   }
 
   const requests = data || [];
-  const newCount = requests.filter((request) => request.status === 'new').length;
-  if (count) count.textContent = `${newCount} new`;
+  if (countError) {
+    console.error('New material request count failed:', countError.message);
+    if (count) count.textContent = 'Count unavailable';
+    showDashboardError('New request count', countError);
+  } else if (count) {
+    count.textContent = `${newCount ?? 0} new`;
+  }
   container.replaceChildren();
   if (!requests.length) {
     container.textContent = 'No material requests yet.';
     return;
+  }
+
+  if (totalCount > requests.length) {
+    const more = document.createElement('p');
+    more.className = 'dashboard-request-overflow';
+    more.textContent = `Showing the 50 most recent of ${totalCount} requests.`;
+    container.appendChild(more);
   }
 
   requests.forEach((request) => {
@@ -1064,30 +1114,32 @@ async function loadMaterialRequests() {
     const actions = document.createElement('div');
     actions.className = 'admin-actions';
     const status = document.createElement('span');
-    status.className = `status-badge ${request.status === 'fulfilled' ? 'status-published' : 'status-draft'}`;
+    status.className = `status-badge ${request.status === 'fulfilled' ? 'status-published' : request.status === 'in_progress' ? 'status-in-progress' : 'status-draft'}`;
     status.textContent = request.status.replace('_', ' ');
     actions.appendChild(status);
     if (request.status !== 'fulfilled') {
-      const complete = document.createElement('button');
-      complete.className = 'secondary-btn';
-      complete.type = 'button';
-      complete.textContent = 'Mark fulfilled';
-      complete.addEventListener('click', async () => {
-        complete.disabled = true;
+      const nextStatus = request.status === 'new' ? 'in_progress' : 'fulfilled';
+      const updateStatus = document.createElement('button');
+      updateStatus.className = 'secondary-btn';
+      updateStatus.type = 'button';
+      updateStatus.textContent = nextStatus === 'in_progress' ? 'Mark in progress' : 'Mark fulfilled';
+      updateStatus.addEventListener('click', async () => {
+        updateStatus.disabled = true;
         const { error: updateError } = await window.rnSupabaseClient
           .from('material_requests')
-          .update({ status: 'fulfilled' })
+          .update({ status: nextStatus })
           .eq('id', request.id);
         if (updateError) {
-          complete.disabled = false;
+          updateStatus.disabled = false;
           showToast('Unable to update this request.', 'error');
           console.error('Material request update failed:', { code: updateError.code, status: updateError.status });
+          showDashboardError('Update material request', updateError);
           return;
         }
-        showToast('Request marked fulfilled.', 'success');
+        showToast(nextStatus === 'in_progress' ? 'Request marked in progress.' : 'Request marked fulfilled.', 'success');
         await loadMaterialRequests();
       });
-      actions.appendChild(complete);
+      actions.appendChild(updateStatus);
     }
     item.append(details, actions);
     container.appendChild(item);
