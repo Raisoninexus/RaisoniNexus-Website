@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   email TEXT UNIQUE,
   branch_id UUID,
   semester_id UUID,
-  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'admin')),
+  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'admin', 'content_manager', 'student_support', 'admin_readonly')),
   avatar_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

@@ -1,3 +1,128 @@
+let currentAdminProfile = null;
+let adminUserAuthStatus = {};
+
+const ADMIN_ROLE_LABELS = {
+  admin: 'Full admin',
+  content_manager: 'Content manager',
+  student_support: 'Student support',
+  admin_readonly: 'Read-only'
+};
+
+const ADMIN_PAGE_ACCESS = {
+  admin: ['dashboard.html', 'resources.html', 'upload.html', 'branches.html', 'semesters.html', 'subjects.html', 'users.html', 'notices.html', 'analytics.html', 'settings.html'],
+  content_manager: ['dashboard.html', 'resources.html', 'upload.html', 'branches.html', 'semesters.html', 'subjects.html', 'notices.html', 'analytics.html'],
+  student_support: ['dashboard.html', 'users.html'],
+  admin_readonly: ['dashboard.html', 'resources.html', 'upload.html', 'branches.html', 'semesters.html', 'subjects.html', 'users.html', 'notices.html', 'analytics.html', 'settings.html']
+};
+
+function isFullAdmin() {
+  return currentAdminProfile?.role === 'admin';
+}
+
+function canSupportStudents() {
+  return ['admin', 'student_support'].includes(currentAdminProfile?.role);
+}
+
+function canManageContent() {
+  return ['admin', 'content_manager'].includes(currentAdminProfile?.role);
+}
+
+function initializeAdminChrome(profile) {
+  const body = document.body;
+  body.classList.add('admin-premium-body', `admin-role-${profile.role}`);
+  body.dataset.adminRole = profile.role;
+
+  const brand = document.querySelector('.admin-brand');
+  if (brand && !brand.querySelector('.admin-brand-copy')) {
+    const name = brand.querySelector('strong');
+    if (name) {
+      const copy = document.createElement('span');
+      copy.className = 'admin-brand-copy';
+      name.replaceWith(copy);
+      copy.appendChild(name);
+      const eyebrow = document.createElement('small');
+      eyebrow.textContent = 'ADMIN WORKSPACE';
+      copy.appendChild(eyebrow);
+    }
+  }
+
+  const nav = document.querySelector('.admin-nav');
+  const iconByPage = {
+    'dashboard.html': '🏠',
+    'analytics.html': '📈',
+    'resources.html': '📚',
+    'upload.html': '⬆️',
+    'branches.html': '🏛️',
+    'semesters.html': '🗓️',
+    'subjects.html': '🧩',
+    'users.html': '👥',
+    'notices.html': '📣',
+    'settings.html': '⚙️',
+    'login.html': '↪'
+  };
+  if (nav) {
+    nav.querySelectorAll('a[href]').forEach((link) => {
+      const page = link.getAttribute('href').split('/').pop();
+      const icon = iconByPage[page];
+      const alreadyHasIcon = link.firstElementChild?.tagName === 'SPAN'
+        && link.firstElementChild.getAttribute('aria-hidden') === 'true';
+      if (icon && !alreadyHasIcon && !link.querySelector('[data-admin-nav-icon]')) {
+        const iconElement = document.createElement('span');
+        iconElement.dataset.adminNavIcon = 'true';
+        iconElement.setAttribute('aria-hidden', 'true');
+        iconElement.textContent = icon;
+        link.prepend(iconElement);
+      }
+
+      const allowedPages = ADMIN_PAGE_ACCESS[profile.role] || [];
+      if (page !== 'login.html' && !allowedPages.includes(page)) link.hidden = true;
+      if (profile.role === 'admin_readonly' && !link.classList.contains('admin-nav-logout')) {
+        link.setAttribute('aria-label', `${link.textContent.trim()} (read only)`);
+      }
+    });
+
+    if (!nav.querySelector('.admin-nav-label')) {
+      const groups = [
+        ['dashboard.html', 'WORKSPACE'],
+        ['resources.html', 'ACADEMIC CONTENT'],
+        ['users.html', 'COMMUNITY'],
+        ['settings.html', 'ACCOUNT']
+      ];
+      groups.forEach(([page, label]) => {
+        const link = nav.querySelector(`a[href="${page}"]`);
+        if (!link || link.hidden) return;
+        const heading = document.createElement('span');
+        heading.className = 'admin-nav-label';
+        heading.textContent = label;
+        nav.insertBefore(heading, link);
+      });
+    }
+  }
+
+  const topbar = document.querySelector('.admin-topbar');
+  if (topbar && !topbar.querySelector('[data-theme-toggle]')) {
+    const isDark = body.classList.contains('dark-mode');
+    const toggle = document.createElement('button');
+    toggle.className = 'dashboard-theme-toggle admin-common-theme-toggle';
+    toggle.type = 'button';
+    toggle.dataset.themeToggle = 'true';
+    toggle.title = 'Toggle color theme';
+    toggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    toggle.textContent = isDark ? '☀️' : '🌙';
+    topbar.appendChild(toggle);
+  }
+
+  const readOnly = profile.role === 'admin_readonly';
+  body.classList.toggle('admin-readonly', readOnly);
+  if (readOnly) {
+    document.querySelectorAll('.admin-main form').forEach((form) => {
+      form.querySelectorAll('input, select, textarea, button[type="submit"]').forEach((control) => {
+        control.disabled = true;
+      });
+    });
+  }
+}
+
 function showDashboardError(area, error) {
   const container = document.getElementById('dashboardAlerts');
   if (!container) return;
@@ -28,27 +153,17 @@ async function loadAdminMetrics() {
   const adminCards = document.querySelectorAll('[data-admin-count]');
   if (!adminCards.length) return;
 
+  const { data, error } = await window.rnSupabaseClient.rpc('get_admin_dashboard_metrics');
+  const metricKeys = ['resources', 'downloads', 'students', 'branches', 'subjects'];
   const metricNames = ['Total resources', 'Total downloads', 'Total students', 'Active branches', 'Active subjects'];
-  const queries = [
-    window.rnSupabaseClient.from('resources').select('*', { count: 'exact', head: true }),
-    window.rnSupabaseClient.from('downloads').select('*', { count: 'exact', head: true }),
-    window.rnSupabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
-    window.rnSupabaseClient.from('branches').select('*', { count: 'exact', head: true }).eq('is_active', true),
-    window.rnSupabaseClient.from('subjects').select('*', { count: 'exact', head: true }).eq('is_active', true)
-  ];
-  const results = await Promise.all(queries);
-
-  results.forEach((result, index) => {
-    const item = adminCards[index];
-    if (!item) return;
-    if (result.error) {
-      console.error('Admin metric fetch failed:', result.error.message);
+  adminCards.forEach((item, index) => {
+    if (error) {
       item.textContent = 'Unavailable';
-      item.title = result.error.message;
-      showDashboardError(metricNames[index], result.error);
+      item.title = error.message;
+      showDashboardError(metricNames[index], error);
       return;
     }
-    item.textContent = result.count ?? 0;
+    item.textContent = data?.[metricKeys[index]] ?? 0;
     item.removeAttribute('title');
   });
 }
@@ -62,12 +177,21 @@ async function requireAdminAccess() {
 
   const session = await window.rnSupabaseUtils.getCurrentUserSession();
   const profile = session ? await window.rnSupabaseUtils.getUserProfile() : null;
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || !window.rnSupabaseUtils.isAdminRole(profile.role)) {
     if (session) await client.auth.signOut();
     window.location.replace('login.html');
     return false;
   }
 
+  const page = window.location.pathname.split('/').pop() || 'dashboard.html';
+  if (!(ADMIN_PAGE_ACCESS[profile.role] || []).includes(page)) {
+    showToast('Your admin role does not have access to this page.', 'error');
+    window.location.replace('dashboard.html');
+    return false;
+  }
+
+  currentAdminProfile = profile;
+  initializeAdminChrome(profile);
   document.body.classList.add('admin-authorized');
   document.querySelectorAll('.admin-nav a[href="login.html"]').forEach((link) => {
     link.addEventListener('click', async (event) => {
@@ -275,21 +399,25 @@ async function loadTaxonomyTables() {
         appendAdminCell(row, String(value ?? ''));
       });
       const actions = document.createElement('td');
-      const removeButton = document.createElement('button');
-      removeButton.type = 'button';
-      removeButton.className = 'ghost-btn';
-      removeButton.textContent = 'Delete';
-      removeButton.addEventListener('click', async () => {
-        if (!window.confirm(`Delete "${record.name}"?`)) return;
-        const { error: deleteError } = await window.rnSupabaseClient.from(config.table).delete().eq('id', record.id);
-        if (deleteError) {
-          showToast(deleteError.message, 'error');
-          return;
-        }
-        await Promise.all([loadTaxonomyTables(), loadUploadOptions()]);
-        showToast('Record deleted.', 'success');
-      });
-      actions.appendChild(removeButton);
+      if (canManageContent()) {
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'ghost-btn';
+        removeButton.textContent = 'Delete';
+        removeButton.addEventListener('click', async () => {
+          if (!window.confirm(`Delete "${record.name}"?`)) return;
+          const { error: deleteError } = await window.rnSupabaseClient.from(config.table).delete().eq('id', record.id);
+          if (deleteError) {
+            showToast(deleteError.message, 'error');
+            return;
+          }
+          await Promise.all([loadTaxonomyTables(), loadUploadOptions()]);
+          showToast('Record deleted.', 'success');
+        });
+        actions.appendChild(removeButton);
+      } else {
+        actions.textContent = 'Read only';
+      }
       row.appendChild(actions);
       body.appendChild(row);
     });
@@ -297,6 +425,7 @@ async function loadTaxonomyTables() {
 }
 
 function bindTaxonomyForms() {
+  if (!canManageContent()) return;
   const forms = [
     {
       id: 'branchForm',
@@ -556,6 +685,7 @@ async function importSubjectsCsv(file, status, button) {
 }
 
 function bindSubjectCsvImport() {
+  if (!canManageContent()) return;
   const controls = createSubjectImportPanel();
   if (!controls) return;
   controls.templateButton.addEventListener('click', () => downloadSubjectTemplate(controls.status));
@@ -722,35 +852,41 @@ async function loadAdminResources() {
       });
       actions.appendChild(view);
     }
-    const statusButton = document.createElement('button');
-    statusButton.type = 'button';
-    statusButton.className = 'secondary-btn';
-    statusButton.textContent = resource.status === 'published' ? 'Unpublish' : 'Publish';
-    statusButton.addEventListener('click', async () => {
-      const status = resource.status === 'published' ? 'draft' : 'published';
-      const { error: updateError } = await window.rnSupabaseClient.from('resources').update({ status }).eq('id', resource.id);
-      if (updateError) {
-        showToast(updateError.message, 'error');
-        return;
-      }
-      await loadAdminResources();
-      showToast(`Resource ${status === 'published' ? 'published' : 'unpublished'}.`, 'success');
-    });
-    const deleteButton = document.createElement('button');
-    deleteButton.type = 'button';
-    deleteButton.className = 'ghost-btn';
-    deleteButton.textContent = 'Delete';
-    deleteButton.addEventListener('click', async () => {
-      if (!window.confirm(`Delete resource "${resource.title}"?`)) return;
-      const { error: deleteError } = await window.rnSupabaseClient.from('resources').delete().eq('id', resource.id);
-      if (deleteError) {
-        showToast(deleteError.message, 'error');
-        return;
-      }
-      await loadAdminResources();
-      showToast('Resource deleted.', 'success');
-    });
-    actions.append(statusButton, deleteButton);
+    if (canManageContent()) {
+      const statusButton = document.createElement('button');
+      statusButton.type = 'button';
+      statusButton.className = 'secondary-btn';
+      statusButton.textContent = resource.status === 'published' ? 'Unpublish' : 'Publish';
+      statusButton.addEventListener('click', async () => {
+        const status = resource.status === 'published' ? 'draft' : 'published';
+        const { error: updateError } = await window.rnSupabaseClient.from('resources').update({ status }).eq('id', resource.id);
+        if (updateError) {
+          showToast(updateError.message, 'error');
+          return;
+        }
+        await loadAdminResources();
+        showToast(`Resource ${status === 'published' ? 'published' : 'unpublished'}.`, 'success');
+      });
+      const deleteButton = document.createElement('button');
+      deleteButton.type = 'button';
+      deleteButton.className = 'ghost-btn';
+      deleteButton.textContent = 'Delete';
+      deleteButton.addEventListener('click', async () => {
+        if (!window.confirm(`Delete resource "${resource.title}"?`)) return;
+        const { error: deleteError } = await window.rnSupabaseClient.from('resources').delete().eq('id', resource.id);
+        if (deleteError) {
+          showToast(deleteError.message, 'error');
+          return;
+        }
+        await loadAdminResources();
+        showToast('Resource deleted.', 'success');
+      });
+      actions.append(statusButton, deleteButton);
+    } else {
+      const readOnly = document.createElement('span');
+      readOnly.textContent = 'Read only';
+      actions.appendChild(readOnly);
+    }
     row.appendChild(actions);
     body.appendChild(row);
   });
@@ -771,8 +907,8 @@ function createAdminUserToolbar(body) {
   search.className = 'input';
   search.id = 'adminUserSearch';
   search.type = 'search';
-  search.placeholder = 'Search students by name or email';
-  search.setAttribute('aria-label', 'Search students by name or email');
+  search.placeholder = 'Search accounts by name or email';
+  search.setAttribute('aria-label', 'Search accounts by name or email');
   const branch = document.createElement('select');
   branch.className = 'select';
   branch.id = 'adminUserBranchFilter';
@@ -780,8 +916,12 @@ function createAdminUserToolbar(body) {
   const semester = document.createElement('select');
   semester.className = 'select';
   semester.id = 'adminUserSemesterFilter';
-  semester.setAttribute('aria-label', 'Filter students by semester');
-  toolbar.append(search, branch, semester);
+  semester.setAttribute('aria-label', 'Filter accounts by semester');
+  const role = document.createElement('select');
+  role.className = 'select';
+  role.id = 'adminUserRoleFilter';
+  role.setAttribute('aria-label', 'Filter accounts by access');
+  toolbar.append(search, branch, semester, role);
   panel.insertBefore(toolbar, panel.querySelector('.table-wrap'));
   const pagination = document.createElement('div');
   pagination.className = 'admin-user-pagination';
@@ -790,11 +930,13 @@ function createAdminUserToolbar(body) {
   search.addEventListener('input', () => { adminUsersPage = 1; renderAdminUserRows(); });
   branch.addEventListener('change', () => { adminUsersPage = 1; renderAdminUserRows(); });
   semester.addEventListener('change', () => { adminUsersPage = 1; renderAdminUserRows(); });
+  role.addEventListener('change', () => { adminUsersPage = 1; renderAdminUserRows(); });
 }
 
 function populateAdminUserFilters() {
   const branchSelect = document.getElementById('adminUserBranchFilter');
   const semesterSelect = document.getElementById('adminUserSemesterFilter');
+  const roleSelect = document.getElementById('adminUserRoleFilter');
   if (branchSelect) {
     branchSelect.replaceChildren(new Option('All branches', ''));
     adminUserBranches.forEach((branch) => branchSelect.add(new Option(branch.name, branch.id)));
@@ -803,18 +945,137 @@ function populateAdminUserFilters() {
     semesterSelect.replaceChildren(new Option('All semesters', ''));
     adminUserSemesters.forEach((semester) => semesterSelect.add(new Option(semester.name, semester.id)));
   }
+  if (roleSelect) {
+    roleSelect.replaceChildren(new Option('All access types', ''));
+    Object.entries(ADMIN_ROLE_LABELS).forEach(([role, label]) => roleSelect.add(new Option(label, role)));
+    roleSelect.add(new Option('Student', 'student'));
+  }
 }
 
 function filteredAdminUsers() {
   const query = document.getElementById('adminUserSearch')?.value.trim().toLowerCase() || '';
   const branchId = document.getElementById('adminUserBranchFilter')?.value || '';
   const semesterId = document.getElementById('adminUserSemesterFilter')?.value || '';
+  const role = document.getElementById('adminUserRoleFilter')?.value || '';
   return adminUserProfiles.filter((profile) => {
     const matchesText = !query || `${profile.name || ''} ${profile.email || ''}`.toLowerCase().includes(query);
     return matchesText
       && (!branchId || profile.branch_id === branchId)
-      && (!semesterId || profile.semester_id === semesterId);
+      && (!semesterId || profile.semester_id === semesterId)
+      && (!role || profile.role === role);
   });
+}
+
+function createAdminInviteDialog() {
+  let dialog = document.getElementById('adminInviteDialog');
+  if (dialog) return dialog;
+
+  dialog = document.createElement('dialog');
+  dialog.id = 'adminInviteDialog';
+  dialog.className = 'admin-user-dialog';
+  const form = document.createElement('form');
+  form.id = 'adminInviteForm';
+  const heading = document.createElement('h2');
+  heading.textContent = 'Invite an administrator';
+  const intro = document.createElement('p');
+  intro.textContent = 'An invitation email will be sent with the selected access level.';
+  const emailLabel = document.createElement('label');
+  emailLabel.htmlFor = 'adminInviteEmail';
+  emailLabel.textContent = 'Work email';
+  const email = document.createElement('input');
+  email.id = 'adminInviteEmail';
+  email.className = 'input';
+  email.type = 'email';
+  email.required = true;
+  email.maxLength = 320;
+  email.autocomplete = 'email';
+  const roleLabel = document.createElement('label');
+  roleLabel.htmlFor = 'adminInviteRole';
+  roleLabel.textContent = 'Access level';
+  const role = document.createElement('select');
+  role.id = 'adminInviteRole';
+  role.className = 'select';
+  Object.entries(ADMIN_ROLE_LABELS).forEach(([value, label]) => role.add(new Option(label, value)));
+  const help = document.createElement('p');
+  help.className = 'admin-invite-role-help';
+  const roleDescriptions = {
+    admin: 'Full access, including creating admins and managing every area.',
+    content_manager: 'Manage study resources, academic structure, notices, and analytics.',
+    student_support: 'Manage student profiles and material requests.',
+    admin_readonly: 'View admin screens and reports without changing data.'
+  };
+  role.addEventListener('change', () => {
+    help.textContent = roleDescriptions[role.value];
+  });
+  role.dispatchEvent(new Event('change'));
+  const actions = document.createElement('div');
+  actions.className = 'admin-actions';
+  const cancel = document.createElement('button');
+  cancel.className = 'secondary-btn';
+  cancel.type = 'button';
+  cancel.textContent = 'Cancel';
+  cancel.addEventListener('click', () => dialog.close());
+  const submit = document.createElement('button');
+  submit.className = 'primary-btn';
+  submit.type = 'submit';
+  submit.textContent = 'Send invitation';
+  actions.append(cancel, submit);
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!isFullAdmin()) {
+      showToast('Only a full admin can invite administrators.', 'error');
+      return;
+    }
+    submit.disabled = true;
+    const { data, error } = await window.rnSupabaseClient.functions.invoke('admin-users', {
+      body: { action: 'invite_admin', email: email.value.trim(), role: role.value }
+    });
+    submit.disabled = false;
+    if (error || data?.error) {
+      console.error('Admin invitation failed:', error?.message || data?.error);
+      showToast(data?.error || error.message, 'error');
+      return;
+    }
+    dialog.close();
+    form.reset();
+    role.dispatchEvent(new Event('change'));
+    showToast(`Admin invitation sent with ${ADMIN_ROLE_LABELS[data.role] || 'selected'} access.`, 'success');
+    await loadAdminUsers();
+  });
+  form.append(heading, intro, emailLabel, email, roleLabel, role, help, actions);
+  dialog.appendChild(form);
+  document.body.appendChild(dialog);
+  return dialog;
+}
+
+function bindAdminInviteButton() {
+  const button = document.getElementById('inviteAdminButton');
+  if (!button || !isFullAdmin()) return;
+  button.hidden = false;
+  if (button.dataset.bound) return;
+  button.dataset.bound = 'true';
+  button.addEventListener('click', () => createAdminInviteDialog().showModal());
+}
+
+async function removeStudentAccount(profile) {
+  const confirmation = window.prompt(
+    `Permanently delete ${profile.name || profile.email} and their profile, bookmarks, and download history?\n\nType the student's email address to confirm:`
+  );
+  if (confirmation === null) return;
+  if (confirmation.trim().toLowerCase() !== (profile.email || '').toLowerCase()) {
+    showToast('The email did not match. Student was not deleted.', 'error');
+    return;
+  }
+  const { data, error } = await window.rnSupabaseClient.functions.invoke('admin-users', {
+    body: { action: 'delete_student', userId: profile.id }
+  });
+  if (error || data?.error) {
+    console.error('Student removal failed:', error?.message || data?.error);
+    showToast(data?.error || error.message, 'error');
+    return;
+  }
+  showToast('Student account and linked profile data permanently deleted.', 'success');
+  await loadAdminUsers();
 }
 
 function createAdminUserEditor() {
@@ -921,7 +1182,7 @@ function renderAdminUserRows() {
   if (!body) return;
   const profiles = filteredAdminUsers();
   if (!profiles.length) {
-    setAdminTableMessage(body, adminUserProfiles.length ? 'No students match these filters.' : 'No user profiles found.', 6);
+    setAdminTableMessage(body, adminUserProfiles.length ? 'No accounts match these filters.' : 'No user profiles found.', 8);
     renderAdminUserPagination(0, 1);
     return;
   }
@@ -936,14 +1197,44 @@ function renderAdminUserRows() {
     appendAdminCell(row, profile.email);
     appendAdminCell(row, profile.branches?.name);
     appendAdminCell(row, profile.semesters?.name);
-    appendAdminCell(row, profile.role);
     const actions = document.createElement('td');
-    const editButton = document.createElement('button');
-    editButton.className = 'secondary-btn';
-    editButton.type = 'button';
-    editButton.textContent = 'Edit profile';
-    editButton.addEventListener('click', () => openAdminUserEditor(profile));
-    actions.appendChild(editButton);
+    const roleCell = document.createElement('td');
+    roleCell.textContent = ADMIN_ROLE_LABELS[profile.role] || 'Student';
+    roleCell.className = `admin-role-badge admin-role-badge-${profile.role}`;
+    row.appendChild(roleCell);
+
+    const authStatus = adminUserAuthStatus[profile.id];
+    const verifiedCell = document.createElement('td');
+    const verified = document.createElement('span');
+    verified.className = `admin-verification-badge ${authStatus?.verified ? 'is-verified' : authStatus ? 'is-unverified' : 'is-unknown'}`;
+    verified.textContent = authStatus ? (authStatus.verified ? '✓ Verified' : 'Not verified') : 'Unavailable';
+    verifiedCell.appendChild(verified);
+    row.appendChild(verifiedCell);
+
+    const providerCell = document.createElement('td');
+    const providerNames = (authStatus?.providers || []).map((provider) => provider === 'google' ? 'Google' : provider === 'email' ? 'Email' : provider);
+    providerCell.textContent = providerNames.length ? [...new Set(providerNames)].join(' + ') : 'Unknown';
+    row.appendChild(providerCell);
+
+    const canEditStudent = profile.role === 'student' && canSupportStudents() && currentAdminProfile.role !== 'admin_readonly';
+    const canDeleteStudent = profile.role === 'student' && canSupportStudents();
+    if (canEditStudent) {
+      const editButton = document.createElement('button');
+      editButton.className = 'secondary-btn';
+      editButton.type = 'button';
+      editButton.textContent = 'Edit profile';
+      editButton.addEventListener('click', () => openAdminUserEditor(profile));
+      actions.appendChild(editButton);
+    }
+    if (canDeleteStudent) {
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'danger-btn';
+      deleteButton.type = 'button';
+      deleteButton.textContent = 'Remove student';
+      deleteButton.addEventListener('click', () => removeStudentAccount(profile));
+      actions.appendChild(deleteButton);
+    }
+    if (!actions.childElementCount) actions.textContent = profile.role === 'student' ? 'Read only' : '—';
     row.appendChild(actions);
     body.appendChild(row);
   });
@@ -957,7 +1248,7 @@ function renderAdminUserPagination(total, pageCount) {
   const range = document.createElement('span');
   const first = total ? (adminUsersPage - 1) * ADMIN_USERS_PAGE_SIZE + 1 : 0;
   const last = Math.min(adminUsersPage * ADMIN_USERS_PAGE_SIZE, total);
-  range.textContent = `${first}-${last} of ${total} students`;
+  range.textContent = `${first}-${last} of ${total} accounts`;
   const actions = document.createElement('div');
   actions.className = 'admin-actions';
   const previous = document.createElement('button');
@@ -980,35 +1271,53 @@ async function loadAdminUsers() {
   const body = document.getElementById('adminUsersBody');
   if (!body) return;
   createAdminUserToolbar(body);
-  const [{ data, error }, branchResult, semesterResult] = await Promise.all([
+  const [{ data, error }, branchResult, semesterResult, authResult] = await Promise.all([
     window.rnSupabaseClient.from('profiles')
       .select('id, name, email, role, branch_id, semester_id, branches(id, name), semesters(id, name)')
       .order('created_at', { ascending: false }),
     window.rnSupabaseClient.from('branches').select('id, name').eq('is_active', true).order('name'),
-    window.rnSupabaseClient.from('semesters').select('id, name, number').order('number')
+    window.rnSupabaseClient.from('semesters').select('id, name, number').order('number'),
+    window.rnSupabaseClient.functions.invoke('admin-users', { body: { action: 'list_auth' } })
   ]);
   if (error || branchResult.error || semesterResult.error) {
-    setAdminTableMessage(body, 'Unable to load student data. Check your database policies.', 6);
+    setAdminTableMessage(body, 'Unable to load account data. Check your database policies.', 8);
     console.error('Admin user data fetch failed:', error?.message || branchResult.error?.message || semesterResult.error?.message);
     return;
   }
   adminUserProfiles = data || [];
+  if (authResult.error || authResult.data?.error) {
+    adminUserAuthStatus = {};
+    console.error('Auth verification details failed:', authResult.error?.message || authResult.data?.error);
+    showToast('Account verification details are unavailable.', 'error');
+  } else {
+    adminUserAuthStatus = authResult.data?.authStatus || {};
+  }
   adminUserBranches = branchResult.data || [];
   adminUserSemesters = semesterResult.data || [];
   populateAdminUserFilters();
   renderAdminUserRows();
+  bindAdminInviteButton();
 
   const exportButton = document.getElementById('usersExportButton');
   if (exportButton && !exportButton.dataset.bound) {
     exportButton.dataset.bound = 'true';
     exportButton.addEventListener('click', () => {
-      const values = [['Name', 'Email', 'Branch', 'Semester', 'Role'], ...filteredAdminUsers().map((profile) => [
-        profile.name,
-        profile.email,
-        profile.branches?.name,
-        profile.semesters?.name,
-        profile.role
-      ])];
+      const values = [
+        ['Name', 'Email', 'Branch', 'Semester', 'Access', 'Email verified', 'Sign-in method'],
+        ...filteredAdminUsers().map((profile) => {
+          const authStatus = adminUserAuthStatus[profile.id];
+          const providers = [...new Set((authStatus?.providers || []).map((provider) => provider === 'google' ? 'Google' : provider === 'email' ? 'Email' : provider))];
+          return [
+            profile.name,
+            profile.email,
+            profile.branches?.name,
+            profile.semesters?.name,
+            ADMIN_ROLE_LABELS[profile.role] || 'Student',
+            authStatus ? (authStatus.verified ? 'Verified' : 'Not verified') : 'Unavailable',
+            providers.join(' + ') || 'Unknown'
+          ];
+        })
+      ];
       downloadCsv('raisoni-nexus-users.csv', values);
     });
   }
@@ -1117,7 +1426,7 @@ async function loadMaterialRequests() {
     status.className = `status-badge ${request.status === 'fulfilled' ? 'status-published' : request.status === 'in_progress' ? 'status-in-progress' : 'status-draft'}`;
     status.textContent = request.status.replace('_', ' ');
     actions.appendChild(status);
-    if (request.status !== 'fulfilled') {
+    if (request.status !== 'fulfilled' && canSupportStudents()) {
       const nextStatus = request.status === 'new' ? 'in_progress' : 'fulfilled';
       const updateStatus = document.createElement('button');
       updateStatus.className = 'secondary-btn';
@@ -1169,9 +1478,9 @@ async function loadAdminAnalytics() {
     date.setUTCDate(date.getUTCDate() + index);
     return date;
   });
-  const [{ data: resources, error: resourceError }, { count: newStudents, error: studentError }, ...dailyResults] = await Promise.all([
+  const [{ data: resources, error: resourceError }, { data: metrics, error: studentError }, ...dailyResults] = await Promise.all([
     client.from('resources').select('title, download_count, branches(name), subjects(name)').order('download_count', { ascending: false }).limit(100),
-    client.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student').gte('created_at', new Date(now.getTime() - 30 * 86400000).toISOString()),
+    client.rpc('get_admin_dashboard_metrics'),
     ...dayStarts.map((start, index) => {
       const end = new Date(start);
       end.setUTCDate(end.getUTCDate() + 1);
@@ -1199,7 +1508,7 @@ async function loadAdminAnalytics() {
   document.getElementById('topResourceTitle').textContent = resources[0]?.title || 'Most downloaded resource';
   document.getElementById('popularSubject').textContent = mostPopular(subjectTotals);
   document.getElementById('popularBranch').textContent = mostPopular(branchTotals);
-  document.getElementById('newStudentCount').textContent = String(newStudents || 0);
+  document.getElementById('newStudentCount').textContent = String(metrics?.new_students_30_days || 0);
 
   const maxDownloads = Math.max(1, ...dailyResults.map((result) => result.count || 0));
   trend.replaceChildren();
@@ -1253,6 +1562,8 @@ function bindAdminPasswordForm() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const adminAccessReady = requireAdminAccess();
+  window.rnAdminAccessReady = adminAccessReady;
   const sidebar = document.querySelector('.admin-sidebar');
   const toggle = document.querySelector('.admin-sidebar-toggle');
   if (sidebar && toggle) {
@@ -1303,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  if (await requireAdminAccess()) {
+  if (await adminAccessReady) {
     await Promise.all([
       loadAdminMetrics(),
       loadUploadOptions(),

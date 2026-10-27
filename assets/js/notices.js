@@ -93,21 +93,25 @@ async function loadAdminNotices() {
     appendNoticeCell(row, notice.priority);
     appendNoticeCell(row, notice.published ? 'Published' : 'Draft');
     const actions = document.createElement('td');
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.className = 'ghost-btn';
-    removeButton.textContent = 'Delete';
-    removeButton.addEventListener('click', async () => {
-      if (!window.confirm(`Delete notice "${notice.title}"?`)) return;
-      const { error: deleteError } = await window.rnSupabaseClient.from('notices').delete().eq('id', notice.id);
-      if (deleteError) {
-        showToast(deleteError.message, 'error');
-        return;
-      }
-      await loadAdminNotices();
-      showToast('Notice deleted.', 'success');
-    });
-    actions.appendChild(removeButton);
+    if (document.body.classList.contains('admin-readonly')) {
+      actions.textContent = 'Read only';
+    } else {
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'ghost-btn';
+      removeButton.textContent = 'Delete';
+      removeButton.addEventListener('click', async () => {
+        if (!window.confirm(`Delete notice "${notice.title}"?`)) return;
+        const { error: deleteError } = await window.rnSupabaseClient.from('notices').delete().eq('id', notice.id);
+        if (deleteError) {
+          showToast(deleteError.message, 'error');
+          return;
+        }
+        await loadAdminNotices();
+        showToast('Notice deleted.', 'success');
+      });
+      actions.appendChild(removeButton);
+    }
     row.appendChild(actions);
     body.appendChild(row);
   });
@@ -115,7 +119,7 @@ async function loadAdminNotices() {
 
 function bindNoticeForm() {
   const form = document.getElementById('noticeForm');
-  if (!form) return;
+  if (!form || document.body.classList.contains('admin-readonly')) return;
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(form);
@@ -143,6 +147,10 @@ function bindNoticeForm() {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadPublicNotices();
-  loadAdminNotices();
-  bindNoticeForm();
+  const loadAdminPage = async () => {
+    if (window.rnAdminAccessReady && !(await window.rnAdminAccessReady)) return;
+    loadAdminNotices();
+    bindNoticeForm();
+  };
+  loadAdminPage();
 });

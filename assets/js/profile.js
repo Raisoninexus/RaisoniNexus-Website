@@ -19,7 +19,7 @@ async function loadStudentProfile() {
       status.textContent = 'Unable to load your profile. Please try again or contact the administrator.';
       return;
     }
-    if (profile.role === 'admin') {
+    if (window.rnSupabaseUtils.isAdminRole(profile.role)) {
       window.location.replace('admin/dashboard.html');
       return;
     }

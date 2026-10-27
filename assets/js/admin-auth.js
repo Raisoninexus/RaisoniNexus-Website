@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (error) throw error;
 
       const profile = await window.rnSupabaseUtils.ensureUserProfile(data.user);
-      if (!profile || profile.role !== 'admin') {
+      if (!profile || !window.rnSupabaseUtils.isAdminRole(profile.role)) {
         await window.rnSupabaseClient.auth.signOut();
         showToast('Access denied. Admin role required.', 'error');
         return;

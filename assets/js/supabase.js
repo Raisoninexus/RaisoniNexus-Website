@@ -79,14 +79,19 @@ async function getUserProfile() {
 async function isAdminUser() {
   if (!window.rnSupabaseClient) return false;
   const profile = await getUserProfile();
-  return !!profile && profile.role === 'admin';
+  return !!profile && isAdminRole(profile.role);
+}
+
+function isAdminRole(role) {
+  return ['admin', 'content_manager', 'student_support', 'admin_readonly'].includes(role);
 }
 
 window.rnSupabaseUtils = {
   getCurrentUserSession,
   getUserProfile,
   ensureUserProfile,
-  isAdminUser
+  isAdminUser,
+  isAdminRole
 };
 
 function updateStudentNav(session) {

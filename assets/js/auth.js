@@ -33,7 +33,7 @@ async function renderAuthContent() {
 
     if (session && !isRecovery) {
       const profile = await window.rnSupabaseUtils.getUserProfile();
-      if (profile?.role === 'admin') {
+      if (window.rnSupabaseUtils.isAdminRole(profile?.role)) {
         window.location.href = 'admin/dashboard.html';
         return;
       }
@@ -197,7 +197,7 @@ async function handleStudentAuth(event) {
       await client.auth.signOut();
       throw new Error('Your profile is unavailable. Contact the administrator.');
     }
-    if (profile.role === 'admin') {
+    if (window.rnSupabaseUtils.isAdminRole(profile.role)) {
       window.location.href = 'admin/dashboard.html';
       return;
     }
