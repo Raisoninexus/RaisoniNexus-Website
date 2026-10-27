@@ -51,6 +51,14 @@
   .container { width: min(var(--container), calc(100% - 22px)); }
   .brand { font-size: 1.12rem; }
   .brand-mark { width: 36px; height: 36px; }
+  .about-developer {
+    grid-template-columns: minmax(0, 1fr);
+    text-align: center;
+  }
+  .about-developer-photo-wrap {
+    width: min(100%, 260px);
+    justify-self: center;
+  }
   .toast-container {
     left: 12px;
     right: 12px;
