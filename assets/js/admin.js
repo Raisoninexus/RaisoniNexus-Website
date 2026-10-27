@@ -183,7 +183,8 @@ async function requireAdminAccess() {
     return false;
   }
 
-  const page = window.location.pathname.split('/').pop() || 'dashboard.html';
+  const pageName = window.location.pathname.split('/').pop() || 'dashboard';
+  const page = pageName.endsWith('.html') ? pageName : `${pageName}.html`;
   if (!(ADMIN_PAGE_ACCESS[profile.role] || []).includes(page)) {
     showToast('Your admin role does not have access to this page.', 'error');
     window.location.replace('dashboard.html');
