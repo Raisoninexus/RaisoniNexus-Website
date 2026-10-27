@@ -11,7 +11,7 @@ function handleSearchQuery() {
   const semester = document.querySelector('#filterSemester')?.value || '';
   const type = document.querySelector('#filterType')?.value || '';
   const results = (window.rnResources || []).filter((item) => {
-    const text = `${item.title} ${item.subject} ${item.description} ${item.type} ${item.branch} ${item.semester}`.toLowerCase();
+    const text = `${item.title} ${item.subject} ${item.description} ${item.type} ${item.branch} ${item.semester} ${item.tags.join(' ')}`.toLowerCase();
     return (!query || text.includes(query))
       && (!branch || item.branch === branch)
       && (!semester || item.semester === semester)

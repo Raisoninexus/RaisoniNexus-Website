@@ -10,6 +10,7 @@ function mapSupabaseResource(row) {
     subject: row.subjects?.name || 'General',
     subjectId: row.subject_id || '',
     type: row.resource_type || 'Resource',
+    tags: Array.isArray(row.tags) ? row.tags : [],
     fileName: row.file_name || '',
     fileType: ((row.file_type?.includes('/') ? row.file_name?.split('.').pop() : row.file_type) || row.file_name?.split('.').pop() || 'FILE').toUpperCase(),
     fileUrl: row.file_url || '',
@@ -60,6 +61,16 @@ function createResourceCard(item) {
 
   const actions = document.createElement('div');
   actions.className = 'resource-actions';
+  const bookmark = document.createElement('button');
+  bookmark.className = 'ghost-btn action-btn bookmark-btn';
+  bookmark.type = 'button';
+  bookmark.dataset.resourceId = item.id;
+  bookmark.setAttribute('aria-pressed', String(window.rnBookmarkedResourceIds?.has(item.id) || false));
+  bookmark.disabled = window.rnBookmarkError || false;
+  bookmark.textContent = window.rnBookmarkedResourceIds?.has(item.id) ? 'Saved' : 'Save';
+  if (window.rnBookmarkError) bookmark.title = 'Saved resources are unavailable right now.';
+  actions.appendChild(bookmark);
+
   if (item.fileUrl) {
     const preview = document.createElement('a');
     preview.className = 'ghost-btn action-btn resource-preview-btn';
@@ -163,7 +174,11 @@ function renderResourceCards(containerSelector, items = []) {
     if (!items.length) {
       const emptyState = document.createElement('div');
       emptyState.className = 'empty-state';
-      emptyState.textContent = 'No published resources found yet.';
+      emptyState.append('No matching published resources are available. ');
+      const requestLink = document.createElement('a');
+      requestLink.href = 'contact.html';
+      requestLink.textContent = 'Request this material';
+      emptyState.appendChild(requestLink);
       container.appendChild(emptyState);
       return;
     }
@@ -198,7 +213,7 @@ function filterResourceList() {
   const branchId = document.getElementById('resourceBranchFilter')?.value || params.get('branch') || '';
   const semesterId = document.getElementById('resourceSemesterFilter')?.value || params.get('semester') || '';
   const resourceType = params.get('type') || '';
-  const pageName = window.location.pathname.split('/').pop().replace(/\.html$/i, '');
+  const pageName = window.location.pathname.split('/').pop().replace(/\.html$/i, '') || 'index';
   const pageResourceTypes = {
     notes: 'Notes',
     pyq: 'PYQ',
@@ -211,16 +226,88 @@ function filterResourceList() {
   const subjectIdentifier = pageName === 'subject' ? params.get('id') || '' : '';
   const subjectSlug = subjectIdentifier.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const filtered = (window.rnResources || []).filter((item) => {
-    const text = `${item.title} ${item.description} ${item.subject} ${item.type} ${item.branch} ${item.semester}`.toLowerCase();
+    const text = `${item.title} ${item.description} ${item.subject} ${item.type} ${item.branch} ${item.semester} ${item.tags.join(' ')}`.toLowerCase();
     return (!query || text.includes(query))
       && (!branchId || item.branchId === branchId)
       && (!semesterId || item.semesterId === semesterId)
+      && (!document.getElementById('showBookmarkedResources')?.classList.contains('active')
+        || window.rnBookmarkedResourceIds?.has(item.id))
       && (!resourceType || item.type.toLowerCase() === resourceType.toLowerCase())
       && (!expectedType || item.type.toLowerCase() === expectedType.toLowerCase())
       && (!subjectIdentifier || item.subjectId === subjectIdentifier
         || (item.subjectId && item.subject.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') === subjectSlug));
   });
-  renderResourceCards('.resource-list:not(#searchResults)', filtered);
+  renderResourceCards('.resource-list:not(#searchResults)', pageName === 'index' ? filtered.slice(0, 6) : filtered);
+}
+
+function updateBookmarkButton(button, saved) {
+  button.textContent = saved ? 'Saved' : 'Save';
+  button.setAttribute('aria-pressed', String(saved));
+}
+
+async function loadResourceBookmarks(client) {
+  const { data: { session } = {}, error: sessionError } = await client.auth.getSession();
+  if (sessionError) throw sessionError;
+  window.rnBookmarkUserId = session?.user?.id || null;
+  if (window.rnBookmarkUserId) {
+    const { data, error } = await client
+      .from('bookmarks')
+      .select('resource_id')
+      .eq('user_id', window.rnBookmarkUserId);
+    if (error) throw error;
+    window.rnBookmarkedResourceIds = new Set((data || []).map((bookmark) => bookmark.resource_id));
+    return;
+  }
+
+  const storedBookmarks = localStorage.getItem('raisoni-nexus-bookmarks');
+  let parsedBookmarks = [];
+  try {
+    parsedBookmarks = storedBookmarks ? JSON.parse(storedBookmarks) : [];
+  } catch {
+    throw new Error('Saved resources in this browser could not be read. Clear this browser’s saved-resource data and try again.');
+  }
+  if (!Array.isArray(parsedBookmarks) || parsedBookmarks.some((id) => typeof id !== 'string')) {
+    throw new Error('Saved resources in this browser are invalid. Clear this browser’s saved-resource data and try again.');
+  }
+  window.rnBookmarkedResourceIds = new Set(parsedBookmarks);
+}
+
+async function toggleResourceBookmark(button) {
+  const resourceId = button.dataset.resourceId;
+  if (!resourceId || window.rnBookmarkError) return;
+  button.disabled = true;
+  const isSaved = window.rnBookmarkedResourceIds.has(resourceId);
+  try {
+    if (window.rnBookmarkUserId) {
+      const query = window.rnSupabaseClient.from('bookmarks');
+      const result = isSaved
+        ? await query.delete().eq('user_id', window.rnBookmarkUserId).eq('resource_id', resourceId)
+        : await query.insert({ user_id: window.rnBookmarkUserId, resource_id: resourceId });
+      if (result.error) throw result.error;
+    } else {
+      const bookmarks = new Set(window.rnBookmarkedResourceIds);
+      isSaved ? bookmarks.delete(resourceId) : bookmarks.add(resourceId);
+      localStorage.setItem('raisoni-nexus-bookmarks', JSON.stringify([...bookmarks]));
+    }
+
+    isSaved ? window.rnBookmarkedResourceIds.delete(resourceId) : window.rnBookmarkedResourceIds.add(resourceId);
+    updateBookmarkButton(button, !isSaved);
+    filterResourceList();
+    showToast(isSaved ? 'Saved resource removed.' : 'Resource saved.', 'success');
+  } catch (error) {
+    console.error('Resource bookmark update failed:', error);
+    showToast(error?.message || 'Could not update saved resources.', 'error');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function syncResourceFilterParam(name, value) {
+  const params = new URLSearchParams(window.location.search);
+  if (value) params.set(name, value);
+  else params.delete(name);
+  const query = params.toString();
+  window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
 }
 
 function notifyResourcesLoaded(errorMessage = '', taxonomy = { branches: [], semesters: [], subjects: [] }) {
@@ -267,7 +354,7 @@ async function loadResources() {
 
   const { data, error } = await client
     .from('resources')
-    .select('id, title, description, branch_id, semester_id, subject_id, resource_type, file_url, file_name, file_type, download_count, created_at, branches(name), semesters(name), subjects(name)')
+    .select('id, title, description, branch_id, semester_id, subject_id, resource_type, file_url, file_name, file_type, download_count, created_at, tags, branches(name), semesters(name), subjects(name)')
     .eq('status', 'published')
     .order('created_at', { ascending: false });
 
@@ -282,6 +369,15 @@ async function loadResources() {
   }
 
   window.rnResources = (data || []).map(mapSupabaseResource);
+  window.rnBookmarkError = false;
+  try {
+    await loadResourceBookmarks(client);
+  } catch (bookmarkError) {
+    window.rnBookmarkError = true;
+    window.rnBookmarkedResourceIds = new Set();
+    console.error('Saved resources could not be loaded:', bookmarkError);
+    showToast(bookmarkError?.message || 'Saved resources could not be loaded.', 'error');
+  }
 
   populateResourceFilters(window.rnResources, taxonomy);
   const params = new URLSearchParams(window.location.search);
@@ -314,11 +410,16 @@ async function loadResources() {
 
 document.addEventListener('click', async (event) => {
   const link = event.target instanceof Element
-    ? event.target.closest('.download-btn[data-resource-id], .resource-preview-btn[data-resource-id]')
+    ? event.target.closest('.download-btn[data-resource-id], .resource-preview-btn[data-resource-id], .bookmark-btn[data-resource-id]')
     : null;
   if (!link) return;
 
   event.preventDefault();
+  if (link.classList.contains('bookmark-btn')) {
+    await toggleResourceBookmark(link);
+    return;
+  }
+
   const requestedAction = link.classList.contains('resource-preview-btn') ? 'preview' : 'download';
   const resourceId = link.dataset.resourceId;
   const resource = (window.rnResources || []).find((item) => item.id === resourceId) || {
@@ -353,13 +454,32 @@ document.addEventListener('click', async (event) => {
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('resourceSearch')?.addEventListener('input', filterResourceList);
-  document.getElementById('resourceBranchFilter')?.addEventListener('change', filterResourceList);
-  document.getElementById('resourceSemesterFilter')?.addEventListener('change', filterResourceList);
+  document.getElementById('resourceBranchFilter')?.addEventListener('change', (event) => {
+    syncResourceFilterParam('branch', event.target.value);
+    filterResourceList();
+  });
+  document.getElementById('resourceSemesterFilter')?.addEventListener('change', (event) => {
+    syncResourceFilterParam('semester', event.target.value);
+    filterResourceList();
+  });
+  document.getElementById('showBookmarkedResources')?.addEventListener('click', (event) => {
+    const button = event.currentTarget;
+    const active = button.classList.toggle('active');
+    button.setAttribute('aria-pressed', String(active));
+    filterResourceList();
+  });
   document.getElementById('clearResourceFilters')?.addEventListener('click', () => {
     document.getElementById('resourceSearch').value = '';
     document.getElementById('resourceBranchFilter').value = '';
     document.getElementById('resourceSemesterFilter').value = '';
-    window.history.replaceState({}, '', window.location.pathname);
+    const params = new URLSearchParams(window.location.search);
+    params.delete('branch');
+    params.delete('semester');
+    const query = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+    const savedFilter = document.getElementById('showBookmarkedResources');
+    savedFilter?.classList.remove('active');
+    savedFilter?.setAttribute('aria-pressed', 'false');
     filterResourceList();
   });
   loadResources();

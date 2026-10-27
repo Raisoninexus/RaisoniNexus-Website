@@ -150,6 +150,14 @@ button, input, select, textarea { font: inherit; }
   padding: 0.9rem 1.4rem;
   border-radius: 14px;
 }
+.secondary-btn[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: rgba(108,99,255,0.12);
+}
+.bookmark-btn[aria-pressed="true"] {
+  border-color: var(--primary);
+  color: var(--primary);
+}
 .ghost-btn {
   padding: 0.75rem 1.1rem;
   border-radius: 12px;

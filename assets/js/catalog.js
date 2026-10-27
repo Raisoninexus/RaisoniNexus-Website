@@ -51,6 +51,18 @@ async function loadPublicBranches() {
   try {
     const branches = await fetchCatalogRows('branches', 'id, name, short_name, description, is_active', 'name');
     const activeBranches = branches.filter((branch) => branch.is_active !== false);
+    const { data: resources, error: resourceError } = await window.rnSupabaseClient
+      .from('resources')
+      .select('branch_id')
+      .eq('status', 'published');
+    if (resourceError) console.error('Branch resource counts failed:', resourceError.message);
+    const resourceCounts = resourceError
+      ? null
+      : (resources || []).reduce((counts, resource) => {
+        counts.set(resource.branch_id, (counts.get(resource.branch_id) || 0) + 1);
+        return counts;
+      }, new Map());
+
     containers.forEach((container) => {
       container.replaceChildren();
       if (!activeBranches.length) {
@@ -62,7 +74,9 @@ async function loadPublicBranches() {
           branch.name,
           branch.description || 'Browse semester and subject resources for this branch.',
           `branch.html?id=${encodeURIComponent(branch.id)}`,
-          branch.short_name || '',
+          resourceCounts
+            ? `${resourceCounts.get(branch.id) || 0} published resources`
+            : 'Published resource count unavailable',
           'Explore Branch'
         );
         card.classList.add('branch-card');
@@ -88,9 +102,20 @@ async function loadHomeStats() {
     window.rnSupabaseClient.from('subjects').select('*', { count: 'exact', head: true }).eq('is_active', true),
     window.rnSupabaseClient.from('resources').select('*', { count: 'exact', head: true }).eq('status', 'published').eq('resource_type', 'PYQ'),
     window.rnSupabaseClient.from('resources').select('*', { count: 'exact', head: true }).eq('status', 'published').eq('resource_type', 'Notes'),
-    window.rnSupabaseClient.from('branches').select('*', { count: 'exact', head: true }).eq('is_active', true)
+    window.rnSupabaseClient.from('branches').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    window.rnSupabaseClient.from('resources').select('*', { count: 'exact', head: true }).eq('status', 'published')
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+    window.rnSupabaseClient.from('resources').select('*', { count: 'exact', head: true }).eq('status', 'published').eq('resource_type', 'Lab Manual')
   ]);
-  const values = { resources: counts[0], subjects: counts[1], pyq: counts[2], notes: counts[3], branches: counts[4] };
+  const values = {
+    resources: counts[0],
+    subjects: counts[1],
+    pyq: counts[2],
+    notes: counts[3],
+    branches: counts[4],
+    recent: counts[5],
+    labManuals: counts[6]
+  };
   stats.forEach((stat) => {
     const result = values[stat.dataset.homeStat];
     if (result?.error) {

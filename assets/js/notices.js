@@ -15,10 +15,15 @@ function renderPublicNotice(row) {
 }
 
 async function loadPublicNotices() {
-  const container = document.getElementById('publicNotices');
-  if (!container) return;
+  const containers = [
+    document.getElementById('publicNotices'),
+    document.getElementById('homePublicNotices')
+  ].filter(Boolean);
+  if (!containers.length) return;
   if (!window.rnSupabaseClient) {
-    container.textContent = 'Notices are unavailable until Supabase is configured.';
+    containers.forEach((container) => {
+      container.textContent = 'Notices are unavailable until Supabase is configured.';
+    });
     return;
   }
 
@@ -29,19 +34,26 @@ async function loadPublicNotices() {
     .order('created_at', { ascending: false });
   if (error) {
     console.error('Notice fetch failed:', error.message);
-    container.textContent = 'Unable to load notices. Check the database setup and try again.';
+    containers.forEach((container) => {
+      container.textContent = 'Unable to load notices. Check the database setup and try again.';
+    });
     return;
   }
 
   const today = new Date().toISOString().slice(0, 10);
   const currentNotices = (data || []).filter((row) => !row.expiry_date || row.expiry_date >= today);
-  container.replaceChildren();
-  if (!currentNotices.length) {
-    container.textContent = 'There are no current notices.';
-    return;
-  }
-  currentNotices.forEach((row) => container.appendChild(renderPublicNotice(row)));
-  window.dispatchEvent(new CustomEvent('rn-dynamic-content', { detail: container }));
+  containers.forEach((container) => {
+    container.replaceChildren();
+    if (!currentNotices.length) {
+      const emptyState = document.createElement('div');
+      emptyState.className = 'empty-state';
+      emptyState.textContent = 'There are no current notices.';
+      container.appendChild(emptyState);
+      return;
+    }
+    currentNotices.forEach((row) => container.appendChild(renderPublicNotice(row)));
+    window.dispatchEvent(new CustomEvent('rn-dynamic-content', { detail: container }));
+  });
 }
 
 function appendNoticeCell(row, value) {
