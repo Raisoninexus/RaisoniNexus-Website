@@ -6,8 +6,11 @@ function applyTheme(theme) {
   body.classList.toggle('dark-mode', isDark);
   const toggle = document.querySelector('[data-theme-toggle]');
   if (toggle) {
-    toggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
-    toggle.textContent = isDark ? '☀️' : '🌙';
+    const label = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+    toggle.setAttribute('aria-label', label);
+    toggle.setAttribute('aria-pressed', String(isDark));
+    toggle.title = label;
+    toggle.textContent = isDark ? '☀' : '☾';
   }
   localStorage.setItem(THEME_KEY, theme);
 }

@@ -128,29 +128,62 @@ document.addEventListener('DOMContentLoaded', () => {
   const mobileToggle = document.querySelector('.mobile-toggle');
   const nav = document.querySelector('.nav-links');
   if (mobileToggle && nav) {
+    if (!nav.id) nav.id = 'primary-navigation';
+    mobileToggle.setAttribute('aria-controls', nav.id);
+    mobileToggle.setAttribute('aria-expanded', 'false');
+    mobileToggle.setAttribute('aria-label', 'Open menu');
+
+    const setMobileNavOpen = (isOpen) => {
+      nav.classList.toggle('open', isOpen);
+      mobileToggle.setAttribute('aria-expanded', String(isOpen));
+      mobileToggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+      mobileToggle.textContent = isOpen ? '×' : '☰';
+    };
+
     mobileToggle.addEventListener('click', () => {
-      nav.classList.toggle('open');
+      setMobileNavOpen(!nav.classList.contains('open'));
+    });
+    nav.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => setMobileNavOpen(false));
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && nav.classList.contains('open')) setMobileNavOpen(false);
     });
   }
 
-  document.querySelectorAll('.magnetic').forEach((card) => {
-    card.addEventListener('pointermove', (event) => {
-      const rect = card.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      const px = (x / rect.width - 0.5) * 16;
-      const py = (y / rect.height - 0.5) * -16;
-      card.style.setProperty('--rx', `${py}deg`);
-      card.style.setProperty('--ry', `${px}deg`);
-      card.style.transform = `perspective(800px) rotateX(${py}deg) rotateY(${px}deg) translateY(-4px)`;
-    });
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const hero = document.querySelector('.nexus-hero');
+    if (hero && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      hero.addEventListener('pointermove', (event) => {
+        const bounds = hero.getBoundingClientRect();
+        const x = ((event.clientX - bounds.left) / bounds.width) * 100;
+        const y = ((event.clientY - bounds.top) / bounds.height) * 100;
+        hero.style.setProperty('--glow-x', `${Math.max(0, Math.min(100, x))}%`);
+        hero.style.setProperty('--glow-y', `${Math.max(0, Math.min(100, y))}%`);
+      });
+      hero.addEventListener('pointerleave', () => {
+        hero.style.removeProperty('--glow-x');
+        hero.style.removeProperty('--glow-y');
+      });
+    }
 
-    card.addEventListener('pointerleave', () => {
-      card.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg) translateY(0)';
-      card.style.setProperty('--rx', '0deg');
-      card.style.setProperty('--ry', '0deg');
+    document.querySelectorAll('.magnetic').forEach((card) => {
+      card.addEventListener('pointermove', (event) => {
+        const rect = card.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const px = (x / rect.width - 0.5) * 16;
+        const py = (y / rect.height - 0.5) * -16;
+        card.style.setProperty('--rx', `${py}deg`);
+        card.style.setProperty('--ry', `${px}deg`);
+      });
+
+      card.addEventListener('pointerleave', () => {
+        card.style.removeProperty('--rx');
+        card.style.removeProperty('--ry');
+      });
     });
-  });
+  }
 
   document.querySelectorAll('.download-btn, .action-btn').forEach((button) => {
     button.addEventListener('click', () => {

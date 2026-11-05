@@ -40,8 +40,12 @@ function populateSearchFilters(items, taxonomy = {}) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelector('#searchInput')?.addEventListener('input', handleSearchQuery);
+function initializeSearchPage() {
+  const searchInput = document.querySelector('#searchInput');
+  if (searchInput) {
+    searchInput.value = new URLSearchParams(window.location.search).get('q')?.trim() || '';
+    searchInput.addEventListener('input', handleSearchQuery);
+  }
   document.querySelectorAll('.filter-panel select').forEach((select) => select.addEventListener('change', handleSearchQuery));
   window.addEventListener('rn-resources-loaded', (event) => {
     const detail = event.detail || {};
@@ -50,4 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
     handleSearchQuery();
   });
   handleSearchQuery();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeSearchPage, { once: true });
+} else {
+  initializeSearchPage();
+}
