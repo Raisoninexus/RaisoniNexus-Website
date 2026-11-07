@@ -11,7 +11,9 @@ function getAuthHomeRedirect(welcomeType) {
 }
 
 function getEmailConfirmationRedirect() {
-  return getAuthHomeRedirect('created');
+  const redirect = new URL('/login.html', window.location.origin);
+  redirect.searchParams.set('welcome', 'created');
+  return redirect.href;
 }
 
 async function renderAuthContent() {
@@ -32,6 +34,13 @@ async function renderAuthContent() {
     }
 
     if (session && !isRecovery) {
+      if (new URLSearchParams(window.location.search).get('welcome') === 'created') {
+        await triggerWelcomeEmail(session.user);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('welcome');
+        window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+      }
+
       const profile = await window.rnSupabaseUtils.getUserProfile();
       if (window.rnSupabaseUtils.isAdminRole(profile?.role)) {
         window.location.href = 'admin/dashboard.html';
@@ -97,6 +106,24 @@ async function renderAuthContent() {
     </div>
   `;
   window.RNButtonIcons?.decorate(authPanel);
+}
+
+async function triggerWelcomeEmail(user) {
+  if (!user?.id || !window.rnSupabaseClient) return null;
+  try {
+    const { error } = await window.rnSupabaseClient.functions.invoke('welcome-email', {
+      body: { user_id: user.id }
+    });
+    if (error) {
+      console.error('Welcome email request failed:', error.message || error);
+      showToast('Your account is ready, but the welcome email could not be sent.', 'error');
+      return null;
+    }
+  } catch (error) {
+    console.error('Welcome email request failed unexpectedly:', error);
+    showToast('Your account is ready, but the welcome email could not be sent.', 'error');
+  }
+  return null;
 }
 
 function getSignupErrorMessage(error) {
@@ -176,6 +203,9 @@ async function handleStudentAuth(event) {
       }
       studentAuthMode = 'login';
       form.reset();
+      if (authData.user && authData.session) {
+        await triggerWelcomeEmail(authData.user);
+      }
       if (!authData.session) {
         showToast('Account created. Check your email to confirm it, then log in.', 'success');
         await renderAuthContent();
