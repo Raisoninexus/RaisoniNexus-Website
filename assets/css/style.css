@@ -1995,6 +1995,11 @@ body:not(.admin-body) .cta-panel {
 body:not(.admin-body) .cta-panel h3 { color: #26273a; font-size: 1.15rem; letter-spacing: -0.04em; }
 body:not(.admin-body) .cta-panel p { color: #555b3f; font-size: 0.82rem; }
 body:not(.admin-body) .cta-panel .secondary-btn { border-color: rgba(38, 39, 58, 0.2); background: rgba(255, 255, 255, 0.46); }
+body:not(.admin-body) .home-updates-section .home-notices-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 16px;
+}
 
 body:not(.admin-body) .section-title {
   color: #292a3d;
