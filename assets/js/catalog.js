@@ -6,11 +6,24 @@ function showCatalogMessage(container, message) {
   if (container) container.textContent = message;
 }
 
-function createCatalogCard(titleText, descriptionText, href, metaText = '', linkText = 'Explore') {
+function createCatalogCard(titleText, descriptionText, href, metaText = '', linkText = 'Explore', mobileTitle = '') {
   const card = document.createElement('article');
   card.className = 'card reveal';
   const title = document.createElement('h3');
-  title.textContent = titleText;
+  if (mobileTitle) {
+    title.setAttribute('aria-label', titleText);
+    const fullTitle = document.createElement('span');
+    fullTitle.className = 'branch-title-full';
+    fullTitle.textContent = titleText;
+    fullTitle.setAttribute('aria-hidden', 'true');
+    const shortTitle = document.createElement('span');
+    shortTitle.className = 'branch-title-mobile';
+    shortTitle.textContent = mobileTitle;
+    shortTitle.setAttribute('aria-hidden', 'true');
+    title.append(fullTitle, shortTitle);
+  } else {
+    title.textContent = titleText;
+  }
   const description = document.createElement('p');
   description.textContent = descriptionText || '';
   card.append(title, description);
@@ -45,6 +58,17 @@ function findByIdentifier(rows, identifier, options = {}) {
     || rows.find((row) => catalogSlug(row.short_name) === catalogSlug(identifier));
 }
 
+function getHomeBranchMobileTitle(name) {
+  if (!/^(computer science and engineering|cse)\b/i.test(String(name).trim())) return '';
+  const normalizedName = String(name).toLowerCase();
+  if (normalizedName.includes('artificial intelligence and machine learning')) return 'CSE AIML';
+  if (normalizedName.includes('artificial intelligence and data science')) return 'CSE AIDS';
+  if (normalizedName.includes('cybersecurity')) return 'CSE Cybersecurity';
+  if (normalizedName.includes('data science')) return 'CSE Data Science';
+  if (normalizedName.includes('artificial intelligence')) return 'CSE AI';
+  return '';
+}
+
 async function loadPublicBranches() {
   const containers = [document.getElementById('branchesGrid'), document.getElementById('homeBranchesGrid')].filter(Boolean);
   if (!containers.length) return;
@@ -77,7 +101,8 @@ async function loadPublicBranches() {
           resourceCounts
             ? `${resourceCounts.get(branch.id) || 0} published resources`
             : 'Published resource count unavailable',
-          'Explore Branch'
+          'Explore Branch',
+          container.id === 'homeBranchesGrid' ? getHomeBranchMobileTitle(branch.name) : ''
         );
         card.classList.add('branch-card');
         container.appendChild(card);
